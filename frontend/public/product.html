@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Product — Couple Collection</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="site-header">
+    <h1>Couple Collection</h1>
+    <nav><a href="index.html">Home</a> · <a href="shop.html">Shop</a></nav>
+  </header>
+
+  <main>
+    <section id="product-details" class="product-list">
+      <h3>Product</h3>
+      <div id="product-content"></div>
+    </section>
+  </main>
+
+  <div id="age-gate" class="age-gate" style="display:none;">
+    <div class="age-gate-inner">
+      <h3>Age Verification</h3>
+      <p>This product is intended for adults 18 years or older. Please confirm your age to continue.</p>
+      <div class="age-actions">
+        <button id="confirm-age">I am 18+</button>
+        <button id="deny-age">I am under 18</button>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <small>&copy; Couple Collection</small>
+  </footer>
+
+  <script src="script.js"></script>
+  <script>
+    document.getElementById('confirm-age').addEventListener('click', ()=>{ document.getElementById('age-gate').style.display='none'; });
+    document.getElementById('deny-age').addEventListener('click', ()=>{ window.location.href='shop.html'; });
+  </script>
+</body>
+</html>

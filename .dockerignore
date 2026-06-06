@@ -1,0 +1,7 @@
+vendor
+backend/php/vendor
+node_modules
+.git
+.gitignore
+README.md
+tests

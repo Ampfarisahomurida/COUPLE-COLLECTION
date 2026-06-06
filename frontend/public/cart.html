@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Cart — Couple Collection</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header"><h1>Couple Collection</h1></header>
+  <main>
+    <h3>Your Cart</h3>
+    <div id="cart-items"></div>
+    <a href="checkout.html">Proceed to Checkout</a>
+  </main>
+  <script>
+    // Simple cart stored in localStorage for scaffolding
+    function renderCart(){
+      const list = JSON.parse(localStorage.getItem('cart')||'[]');
+      const out = document.getElementById('cart-items');
+      out.innerHTML = list.map(i=>`<div>${i.name} — ${i.qty} × R${i.price}</div>`).join('') || 'Cart is empty.';
+    }
+    document.addEventListener('DOMContentLoaded', renderCart);
+  </script>
+</body>
+</html>
