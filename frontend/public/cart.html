@@ -11,16 +11,66 @@
   <main>
     <h3>Your Cart</h3>
     <div id="cart-items"></div>
-    <a href="checkout.html">Proceed to Checkout</a>
+    <div id="cart-total" class="cart-total"></div>
+    <div class="cart-actions">
+      <a class="button" href="shop.html">Continue Shopping</a>
+      <a class="button primary" href="checkout.html">Proceed to Checkout</a>
+    </div>
   </main>
   <script>
-    // Simple cart stored in localStorage for scaffolding
-    function renderCart(){
-      const list = JSON.parse(localStorage.getItem('cart')||'[]');
-      const out = document.getElementById('cart-items');
-      out.innerHTML = list.map(i=>`<div>${i.name} — ${i.qty} × R${i.price}</div>`).join('') || 'Cart is empty.';
+    const API_BASE = '/backend/php/api';
+
+    function formatPrice(value){
+      return `R${value.toFixed(2)}`;
     }
-    document.addEventListener('DOMContentLoaded', renderCart);
+
+    function renderCart(items){
+      const out = document.getElementById('cart-items');
+      const totalEl = document.getElementById('cart-total');
+      if(!items.length){
+        out.innerHTML = '<p>Your cart is empty.</p>';
+        totalEl.textContent = '';
+        return;
+      }
+      let total = 0;
+      out.innerHTML = items.map(item => {
+        const itemTotal = (item.price||0) * (item.qty||1);
+        total += itemTotal;
+        return `<div class="cart-row">
+          <div><strong>${item.name}</strong></div>
+          <div>${item.qty} × ${formatPrice(item.price||0)}</div>
+          <div>${formatPrice(itemTotal)}</div>
+          <div><button class="remove-item" data-id="${item.id}">Remove</button></div>
+        </div>`;
+      }).join('');
+      totalEl.textContent = `Total: ${formatPrice(total)}`;
+      document.querySelectorAll('.remove-item').forEach(btn => btn.addEventListener('click', async (e) => {
+        const id = e.target.dataset.id;
+        const cart = JSON.parse(localStorage.getItem('cart')||'[]').filter(item => item.id != id);
+        localStorage.setItem('cart', JSON.stringify(cart));
+        try{ await fetch(`${API_BASE}/cart.php`, {method:'DELETE', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id})}); }catch(e){ console.warn('Cart sync failed', e); }
+        renderCart(cart);
+      }));
+    }
+
+    async function loadCart(){
+      let items = [];
+      try{
+        const response = await fetch(`${API_BASE}/cart.php`);
+        if(response.ok){
+          items = await response.json();
+          if(Array.isArray(items) && items.length){
+            localStorage.setItem('cart', JSON.stringify(items));
+          }
+        }
+      }catch(e){ /* ignore */ }
+      if(!items.length){
+        items = JSON.parse(localStorage.getItem('cart')||'[]');
+      }
+      renderCart(items);
+    }
+
+    document.addEventListener('DOMContentLoaded', loadCart);
   </script>
 </body>
 </html>

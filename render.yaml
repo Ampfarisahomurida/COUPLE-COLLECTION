@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: couple-collection-shop
+    env: docker
+    dockerfilePath: Dockerfile
+    plan: starter
+    branch: main
+    envVars:
+      - key: DB_NAME
+        value: couple_collection
+      - key: SITE_NAME
+        value: Couple Collection

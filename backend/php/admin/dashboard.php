@@ -61,7 +61,9 @@ if(empty($_SESSION['is_admin'])){
 	<form id="create">
 		<input name="sku" placeholder="SKU">
 		<input name="name" placeholder="Name" required>
+		<input name="category" placeholder="Category">
 		<input name="short_description" placeholder="Short description">
+		<input name="description" placeholder="Description">
 		<input name="price" placeholder="Price" type="number" step="0.01">
 		<input name="stock" placeholder="Stock" type="number">
 		<label>Age restricted <input type="checkbox" name="age_restricted"></label>
@@ -111,6 +113,7 @@ async function fetchProducts(){
 		document.getElementById('modal-id').value = p.id;
 		document.getElementById('modal-sku').value = p.sku || '';
 		document.getElementById('modal-name').value = p.name || '';
+		document.getElementById('modal-category').value = p.category || '';
 		document.getElementById('modal-short').value = p.short_description || '';
 		document.getElementById('modal-desc').value = p.description || '';
 		document.getElementById('modal-price').value = p.price || 0;
@@ -123,7 +126,17 @@ async function fetchProducts(){
 document.getElementById('create').addEventListener('submit', async function(e){
 	e.preventDefault();
 	const fd = new FormData(e.target);
-	const payload = {sku: fd.get('sku'), name: fd.get('name'), short_description: fd.get('short_description'), price: parseFloat(fd.get('price')||0), stock: parseInt(fd.get('stock')||0), age_restricted: fd.get('age_restricted')?1:0 };
+	const payload = {
+		sku: fd.get('sku'),
+		name: fd.get('name'),
+		category: fd.get('category'),
+		short_description: fd.get('short_description'),
+		description: fd.get('description'),
+		price: parseFloat(fd.get('price')||0),
+		stock: parseInt(fd.get('stock')||0),
+		age_restricted: fd.get('age_restricted')?1:0,
+		csrf_token: fd.get('csrf_token')
+	};
 	const res = await fetch('../api/admin/products.php', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
 	const j = await res.json();
 	if(res.ok) { document.getElementById('create-msg').innerText = 'Created ID '+j.id; fetchProducts(); }

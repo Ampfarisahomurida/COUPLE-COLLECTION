@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Order Confirmation — Couple Collection</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header"><h1>Couple Collection</h1></header>
+  <main>
+    <h3>Order Confirmation</h3>
+    <div id="confirmation"></div>
+    <a class="button primary" href="shop.html">Continue Shopping</a>
+  </main>
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const orderId = params.get('order_id');
+    const container = document.getElementById('confirmation');
+    if(orderId){
+      container.innerHTML = `<p>Thank you! Your order has been received.</p><p>Order ID: <strong>${orderId}</strong></p><p>We will process it shortly.</p>`;
+    } else {
+      container.innerHTML = '<p>Order confirmation not found. If you just submitted an order, please check your email or try again.</p>';
+    }
+  </script>
+</body>
+</html>

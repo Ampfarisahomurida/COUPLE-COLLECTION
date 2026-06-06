@@ -11,11 +11,17 @@ Tech stack (initial):
 Quick start (PHP built-in server):
 
 ```bash
-cd "c:\Users\murid\OneDrive\Desktop\couple-collection-shop\backend\php"
-php -S localhost:8000
+cd "c:\Users\murid\OneDrive\Desktop\couple-collection-shop"
+php -S 0.0.0.0:8000 router.php
 ```
 
-Open frontend/public/index.html in a browser for the static frontend.
+Open the site at:
+
+```text
+http://localhost:8000/
+```
+
+This serves the frontend from `frontend/public` and routes API requests to `backend/php/api`.
 
 Next steps: implement product pages, admin dashboard, payment integration, and age verification.
 

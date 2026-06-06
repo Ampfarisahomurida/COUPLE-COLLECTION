@@ -1,11 +1,14 @@
+const API_BASE = '/backend/php/api';
+
 function makeLinkToProduct(p){
   return `product.html?id=${encodeURIComponent(p.id)}`;
 }
 
 async function fetchProducts(id){
   try{
-    const url = id ? `../../backend/php/api/products.php?id=${encodeURIComponent(id)}` : '../../backend/php/api/products.php';
-    const res = await fetch(url);
+    const url = new URL(`${API_BASE}/products.php`, window.location.origin);
+    if(id) url.searchParams.set('id', id);
+    const res = await fetch(url.href);
     const data = await res.json();
     return data;
   }catch(e){
@@ -33,7 +36,7 @@ function renderProducts(list){
     if(found) found.qty = found.qty + 1; else cart.push({id:id,name:name,price:price,qty:1});
     localStorage.setItem('cart', JSON.stringify(cart));
     // sync to server
-    try{ await fetch('../../backend/php/api/cart.php', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id:id,name:name,price:price,qty:1})}); }catch(e){ console.warn('Cart sync failed', e); }
+    try{ await fetch(`${API_BASE}/cart.php`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id:id,name:name,price:price,qty:1})}); }catch(e){ console.warn('Cart sync failed', e); }
     alert('Added to cart');
   }));
 }
@@ -105,7 +108,7 @@ document.addEventListener('DOMContentLoaded', async ()=>{
         const found = cart.find(i=>i.id==id);
         if(found) found.qty = found.qty + 1; else cart.push({id:id,name:name,price:price,qty:1});
         localStorage.setItem('cart', JSON.stringify(cart));
-        try{ await fetch('../../backend/php/api/cart.php', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id:id,name:name,price:price,qty:1})}); }catch(e){ console.warn('Cart sync failed', e); }
+        try{ await fetch(`${API_BASE}/cart.php`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id:id,name:name,price:price,qty:1})}); }catch(e){ console.warn('Cart sync failed', e); }
         alert('Added to cart');
       });
     }

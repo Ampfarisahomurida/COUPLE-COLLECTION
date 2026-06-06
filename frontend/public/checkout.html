@@ -10,60 +10,163 @@
   <header class="site-header"><h1>Couple Collection</h1></header>
   <main>
     <h3>Checkout</h3>
+    <div id="cart-summary"></div>
+    <div id="checkout-total" class="cart-total"></div>
     <form id="checkout">
-      <label>Name <input name="name" required></label><br>
-      <label>Email <input name="email" type="email" required></label><br>
+      <label>Name <input name="name" required></label>
+      <label>Email <input name="email" type="email" required></label>
       <label>Payment method
-        <select name="method">
-          <option value="card">Credit/Debit Card (placeholder)</option>
-          <option value="eft">Instant EFT (placeholder)</option>
-          <option value="wallet">Mobile Wallet (placeholder)</option>
+        <select name="method" id="payment-method">
+          <option value="card">Credit/Debit Card</option>
+          <option value="eft">Instant EFT</option>
+          <option value="wallet">Mobile Wallet</option>
         </select>
-      </label><br>
-      <button>Place Order (placeholder)</button>
+      </label>
+      <div id="card-section" class="card-section" style="display:none;">
+        <label>Card details</label>
+        <div id="card-element" class="card-element"></div>
+        <div id="card-errors" class="message" role="alert"></div>
+      </div>
+      <button class="button primary">Place Order</button>
     </form>
-    <div id="msg"></div>
+    <div id="msg" class="message"></div>
   </main>
   <script src="https://js.stripe.com/v3/"></script>
   <script>
-    async function initStripe(){
-      const cfg = await fetch('../../backend/php/api/payment/stripe_config.php').then(r=>r.json());
-      if(!cfg.publishableKey) return null;
-      return Stripe(cfg.publishableKey);
+    const API_BASE = '/backend/php/api';
+
+    function formatPrice(value){
+      return `R${value.toFixed(2)}`;
     }
 
-    document.getElementById('checkout').addEventListener('submit', async function(e){
-      e.preventDefault();
-      const fd = new FormData(e.target);
-      const cart = JSON.parse(localStorage.getItem('cart')||'[]');
-      const total = Math.round(cart.reduce((s,i)=>s + (i.price||0)*(i.qty||1),0) * 100); // cents
-
-      // For card payments, use Stripe PaymentIntent
-      const method = fd.get('method');
-      if(method === 'card'){
-        const stripe = await initStripe();
-        if(!stripe){ document.getElementById('msg').innerText = 'Stripe not configured'; return; }
-        // Create PaymentIntent on the server
-        const piRes = await fetch('../../backend/php/api/payment/create_intent.php', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({amount: total, currency:'zar', description:'Order from Couple Collection'})});
-        const pi = await piRes.json();
-        if(!pi.client_secret){ document.getElementById('msg').innerText = 'Payment initiation failed'; return; }
-
-        // Use Stripe.js to collect card details: simple card element mounting
-        const cardHolder = prompt('Enter cardholder name for demo:');
-        // For demo purposes, confirm card payment with test card using Stripe's test keys
-        const {error, paymentIntent} = await stripe.confirmCardPayment(pi.client_secret, {payment_method: {card: {token: 'tok_visa'}, billing_details: {name: cardHolder || fd.get('name')}}});
-        if(error){ document.getElementById('msg').innerText = 'Payment failed: '+error.message; return; }
-        document.getElementById('msg').innerText = 'Payment succeeded: '+(paymentIntent.id||'');
-        localStorage.removeItem('cart');
+    function renderSummary(cart){
+      const container = document.getElementById('cart-summary');
+      if(!cart.length){
+        container.innerHTML = '<p>Your cart is empty. Add products from the shop first.</p>';
+        document.getElementById('checkout-total').textContent = '';
         return;
       }
+      let total = 0;
+      container.innerHTML = cart.map(item => {
+        const itemTotal = (item.price||0) * (item.qty||1);
+        total += itemTotal;
+        return `<div class="cart-row"><div>${item.name}</div><div>${item.qty} × ${formatPrice(item.price||0)}</div><div>${formatPrice(itemTotal)}</div></div>`;
+      }).join('');
+      document.getElementById('checkout-total').textContent = `Total: ${formatPrice(total)}`;
+    }
 
-      // Fallback: server placeholder for non-card methods
-      const payload = {name: fd.get('name'), email: fd.get('email'), method: method, cart: cart};
-      const res = await fetch('../../backend/php/api/checkout.php', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
-      const j = await res.json();
-      if(res.ok) { document.getElementById('msg').innerText = 'Order placed (placeholder). Order ID: '+j.order_id; localStorage.removeItem('cart'); }
-      else document.getElementById('msg').innerText = j.error || 'Failed';
+    async function initStripe(){
+      try{
+        const cfg = await fetch(`${API_BASE}/payment/stripe_config.php`).then(r=>r.json());
+        if(!cfg.publishableKey) return null;
+        return Stripe(cfg.publishableKey);
+      }catch(e){
+        return null;
+      }
+    }
+
+    async function loadCart(){
+      let cart = [];
+      try{
+        const res = await fetch(`${API_BASE}/cart.php`);
+        if(res.ok){ cart = await res.json(); }
+      }catch(e){ }
+      if(!Array.isArray(cart) || !cart.length){ cart = JSON.parse(localStorage.getItem('cart')||'[]'); }
+      renderSummary(cart);
+      return cart;
+    }
+
+    document.addEventListener('DOMContentLoaded', async ()=>{
+      const cart = await loadCart();
+      const paymentMethod = document.getElementById('payment-method');
+      const cardSection = document.getElementById('card-section');
+      const cardErrors = document.getElementById('card-errors');
+      let stripe = null;
+      let cardElement = null;
+
+      async function mountCard(){
+        if(cardElement) return;
+        stripe = await initStripe();
+        if(!stripe){
+          cardSection.style.display = 'none';
+          return;
+        }
+        const elements = stripe.elements();
+        cardElement = elements.create('card');
+        cardElement.mount('#card-element');
+      }
+
+      function updatePaymentUI(){
+        if(paymentMethod.value === 'card'){
+          cardSection.style.display = 'block';
+          mountCard();
+        } else {
+          cardSection.style.display = 'none';
+          cardErrors.textContent = '';
+        }
+      }
+
+      paymentMethod.addEventListener('change', updatePaymentUI);
+      updatePaymentUI();
+
+      document.getElementById('checkout').addEventListener('submit', async function(e){
+        e.preventDefault();
+        const fd = new FormData(e.target);
+        if(!cart.length){ document.getElementById('msg').textContent = 'Your cart is empty.'; return; }
+        const totalCents = Math.round(cart.reduce((s,i)=>s + (Number(i.price)||0)*(Number(i.qty)||1),0) * 100);
+        const method = fd.get('method');
+
+        if(method === 'card'){
+          if(!cardElement){ document.getElementById('msg').textContent = 'Card input is not ready.'; return; }
+          cardErrors.textContent = '';
+          const intentRes = await fetch(`${API_BASE}/payment/create_intent.php`, {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({amount: totalCents, currency:'zar', description:'Order from Couple Collection'})
+          });
+          const pi = await intentRes.json();
+          if(!pi.client_secret){ document.getElementById('msg').textContent = 'Payment initiation failed.'; return; }
+          const result = await stripe.confirmCardPayment(pi.client_secret, {
+            payment_method: {
+              card: cardElement,
+              billing_details: {name: fd.get('name'), email: fd.get('email')}
+            }
+          });
+          if(result.error){
+            cardErrors.textContent = result.error.message || 'Payment failed';
+            return;
+          }
+          const orderRes = await fetch(`${API_BASE}/checkout.php`, {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({
+              name: fd.get('name'),
+              email: fd.get('email'),
+              method: 'card',
+              payment_intent_id: result.paymentIntent.id,
+              cart: cart
+            })
+          });
+          const orderData = await orderRes.json();
+          if(orderRes.ok){
+            localStorage.removeItem('cart');
+            window.location.href = `order_success.html?order_id=${encodeURIComponent(orderData.order_id)}`;
+            return;
+          }
+          document.getElementById('msg').textContent = orderData.error || 'Checkout failed.';
+          return;
+        }
+
+        const payload = {name: fd.get('name'), email: fd.get('email'), method: method, cart: cart};
+        const res = await fetch(`${API_BASE}/checkout.php`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
+        const j = await res.json();
+        if(res.ok){
+          localStorage.removeItem('cart');
+          window.location.href = `order_success.html?order_id=${encodeURIComponent(j.order_id)}`;
+        } else {
+          document.getElementById('msg').textContent = j.error || 'Failed to place order.';
+        }
+      });
     });
   </script>
 </body>
