@@ -7,14 +7,29 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <header class="site-header"><h1>Couple Collection</h1></header>
-  <main>
-    <h3>Checkout</h3>
+  <header class="site-header">
+    <div class="brand">
+      <a href="index.html"><span class="logo-mark">CC</span><span class="brand-name">Couple Collection</span></a>
+    </div>
+    <nav class="site-nav">
+      <a href="shop.html">Shop</a>
+      <a href="cart.html">Cart</a>
+      <a href="index.html">Home</a>
+    </nav>
+  </header>
+
+  <main class="page-shell">
+    <section class="page-heading">
+      <h3>Checkout</h3>
+      <p>Fill in your details and place your order with secure payment options.</p>
+    </section>
     <div id="cart-summary"></div>
     <div id="checkout-total" class="cart-total"></div>
-    <form id="checkout">
-      <label>Name <input name="name" required></label>
-      <label>Email <input name="email" type="email" required></label>
+    <form id="checkout" class="checkout-form">
+      <div class="field-row">
+        <label>Name <input name="name" required></label>
+        <label>Email <input name="email" type="email" required></label>
+      </div>
       <label>Payment method
         <select name="method" id="payment-method">
           <option value="card">Credit/Debit Card</option>

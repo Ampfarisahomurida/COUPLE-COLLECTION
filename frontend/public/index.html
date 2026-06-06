@@ -8,23 +8,52 @@
 </head>
 <body>
   <header class="site-header">
-    <h1>Couple Collection</h1>
-    <nav><a href="shop.html">Shop</a> · <a href="cart.html">Cart</a> · <a href="#about">About</a></nav>
+    <div class="brand">
+      <a href="index.html"><span class="logo-mark">CC</span><span class="brand-name">Couple Collection</span></a>
+    </div>
+    <form class="search-bar" action="shop.html">
+      <input id="search-input" type="search" name="q" placeholder="Search gifts, date night sets, wellness essentials" />
+      <button type="submit">Search</button>
+    </form>
+    <nav class="site-nav">
+      <a href="shop.html">Shop</a>
+      <a href="cart.html">Cart</a>
+      <a href="checkout.html">Checkout</a>
+    </nav>
   </header>
 
   <main>
     <section class="hero">
-      <h2>Discreet. Professional. Curated for couples.</h2>
+      <div class="hero-copy">
+        <span class="eyebrow">Curated for Couples</span>
+        <h2>Explore romantic essentials, premium gifts and discreet delivery.</h2>
+        <p>Shop with confidence from a modern marketplace experience built for connection.</p>
+        <a class="button primary" href="shop.html">Browse popular items</a>
+      </div>
+      <div class="hero-panels">
+        <article class="panel">Date night kits</article>
+        <article class="panel">Self-care sets</article>
+        <article class="panel">New arrivals</article>
+        <article class="panel">Most loved</article>
+      </div>
     </section>
 
-    <section id="shop" class="product-list">
-      <h3>Featured products</h3>
+    <section class="product-list">
+      <div class="section-head">
+        <div>
+          <h3>Featured products</h3>
+          <p>Top picks for couples, refreshed daily.</p>
+        </div>
+      </div>
       <div id="products" class="grid"></div>
     </section>
   </main>
 
-  <footer>
-    <small>&copy; Couple Collection</small>
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <span>&copy; Couple Collection</span>
+      <span>Fast delivery | Secure checkout | Customer support</span>
+    </div>
   </footer>
 
   <script src="script.js"></script>

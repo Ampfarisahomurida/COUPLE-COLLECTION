@@ -8,19 +8,66 @@
 </head>
 <body>
   <header class="site-header">
-    <h1>Couple Collection</h1>
-    <nav><a href="index.html">Home</a> · <a href="cart.html">Cart</a> · <a href="#shop">Shop</a></nav>
+    <div class="brand">
+      <a href="index.html"><span class="logo-mark">CC</span><span class="brand-name">Couple Collection</span></a>
+    </div>
+    <form class="search-bar" action="shop.html">
+      <input id="search-input" type="search" name="q" placeholder="Search for candles, sets, or romantic gifts" />
+      <button type="submit">Search</button>
+    </form>
+    <nav class="site-nav">
+      <a href="index.html">Home</a>
+      <a href="cart.html">Cart</a>
+      <a href="checkout.html">Checkout</a>
+    </nav>
   </header>
 
   <main>
-    <section id="shop" class="product-list">
-      <h3>Shop</h3>
-      <div id="products" class="grid"></div>
+    <section class="store-toolbar">
+      <div>
+        <h3>Find the perfect gift</h3>
+        <p>Browse our catalog and add items to your cart with a smooth, modern shopping experience.</p>
+      </div>
+      <div class="sort-chip">Popular now</div>
+    </section>
+
+    <section class="shop-container">
+      <aside class="filter-sidebar">
+        <div class="filter-section">
+          <h4>Categories</h4>
+          <div id="category-filters" class="filter-list"></div>
+        </div>
+        <div class="filter-section">
+          <h4>Price range</h4>
+          <label>Min <input type="number" id="price-min" placeholder="0" min="0"></label>
+          <label>Max <input type="number" id="price-max" placeholder="5000" min="0"></label>
+          <button id="apply-price">Apply</button>
+        </div>
+        <div class="filter-section">
+          <h4>Ratings</h4>
+          <label><input type="checkbox" value="5"> ★★★★★ 5 stars</label>
+          <label><input type="checkbox" value="4"> ★★★★ 4+ stars</label>
+          <label><input type="checkbox" value="3"> ★★★ 3+ stars</label>
+        </div>
+      </aside>
+
+      <section id="shop" class="product-list">
+        <div class="section-head">
+          <div>
+            <h3>Shop curated essentials</h3>
+            <p>Discover products across top categories.</p>
+          </div>
+        </div>
+        <div id="products" class="grid"></div>
+      </section>
     </section>
   </main>
 
-  <footer>
-    <small>&copy; Couple Collection</small>
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <span>&copy; Couple Collection</span>
+      <span>Secure payments | Quality packaging | Fast support</span>
+    </div>
   </footer>
 
   <script src="script.js"></script>
