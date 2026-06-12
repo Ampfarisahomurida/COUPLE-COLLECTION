@@ -32,9 +32,9 @@
       </div>
       <label>Payment method
         <select name="method" id="payment-method">
-          <option value="card">Credit/Debit Card</option>
           <option value="eft">Instant EFT</option>
           <option value="wallet">Mobile Wallet</option>
+          <option value="card">Credit/Debit Card</option>
         </select>
       </label>
       <div id="card-section" class="card-section" style="display:none;">
@@ -73,7 +73,7 @@
     async function initStripe(){
       try{
         const cfg = await fetch(`${API_BASE}/payment/stripe_config.php`).then(r=>r.json());
-        if(!cfg.publishableKey) return null;
+        if(!cfg.cardEnabled || !cfg.publishableKey || cfg.publishableKey === 'pk_test_replace_me') return null;
         return Stripe(cfg.publishableKey);
       }catch(e){
         return null;
@@ -104,6 +104,8 @@
         stripe = await initStripe();
         if(!stripe){
           cardSection.style.display = 'none';
+          paymentMethod.value = 'eft';
+          document.getElementById('msg').textContent = 'Card payments are not configured yet. Please use Instant EFT or Mobile Wallet.';
           return;
         }
         const elements = stripe.elements();
@@ -134,13 +136,19 @@
         if(method === 'card'){
           if(!cardElement){ document.getElementById('msg').textContent = 'Card input is not ready.'; return; }
           cardErrors.textContent = '';
-          const intentRes = await fetch(`${API_BASE}/payment/create_intent.php`, {
-            method: 'POST',
-            headers: {'Content-Type':'application/json'},
-            body: JSON.stringify({amount: totalCents, currency:'zar', description:'Order from Couple Collection'})
-          });
-          const pi = await intentRes.json();
-          if(!pi.client_secret){ document.getElementById('msg').textContent = 'Payment initiation failed.'; return; }
+          let pi = null;
+          try{
+            const intentRes = await fetch(`${API_BASE}/payment/create_intent.php`, {
+              method: 'POST',
+              headers: {'Content-Type':'application/json'},
+              body: JSON.stringify({amount: totalCents, currency:'zar', description:'Order from Couple Collection'})
+            });
+            pi = await intentRes.json();
+          }catch(error){
+            document.getElementById('msg').textContent = 'Payment service is not available right now. Please use Instant EFT or Mobile Wallet.';
+            return;
+          }
+          if(!pi.client_secret){ document.getElementById('msg').textContent = pi.error || 'Payment initiation failed.'; return; }
           const result = await stripe.confirmCardPayment(pi.client_secret, {
             payment_method: {
               card: cardElement,
@@ -151,24 +159,28 @@
             cardErrors.textContent = result.error.message || 'Payment failed';
             return;
           }
-          const orderRes = await fetch(`${API_BASE}/checkout.php`, {
-            method: 'POST',
-            headers: {'Content-Type':'application/json'},
-            body: JSON.stringify({
-              name: fd.get('name'),
-              email: fd.get('email'),
-              method: 'card',
-              payment_intent_id: result.paymentIntent.id,
-              cart: cart
-            })
-          });
-          const orderData = await orderRes.json();
-          if(orderRes.ok){
-            localStorage.removeItem('cart');
-            window.location.href = `order_success.html?order_id=${encodeURIComponent(orderData.order_id)}`;
-            return;
+          try{
+            const orderRes = await fetch(`${API_BASE}/checkout.php`, {
+              method: 'POST',
+              headers: {'Content-Type':'application/json'},
+              body: JSON.stringify({
+                name: fd.get('name'),
+                email: fd.get('email'),
+                method: 'card',
+                payment_intent_id: result.paymentIntent.id,
+                cart: cart
+              })
+            });
+            const orderData = await orderRes.json();
+            if(orderRes.ok){
+              localStorage.removeItem('cart');
+              window.location.href = `order_success.html?order_id=${encodeURIComponent(orderData.order_id)}`;
+              return;
+            }
+            document.getElementById('msg').textContent = orderData.error || 'Checkout failed.';
+          }catch(error){
+            document.getElementById('msg').textContent = 'Order saving failed after payment. Please contact support with your payment confirmation.';
           }
-          document.getElementById('msg').textContent = orderData.error || 'Checkout failed.';
           return;
         }
 

@@ -90,6 +90,9 @@ async function fetchProducts(id){
     if(id) url.searchParams.set('id', id);
     const res = await fetch(url.href);
     const data = await res.json();
+    if(!res.ok){
+      throw new Error(data.error || 'Product request failed');
+    }
 
     if(id){
       if(Array.isArray(data)){

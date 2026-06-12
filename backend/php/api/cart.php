@@ -4,7 +4,7 @@ require_once __DIR__ . '/../session.php';
 require_once __DIR__ . '/../db.php';
 
 $pdo = null;
-try{ $pdo = get_db(); }catch(Throwable $e){ $pdo = null; }
+try{ $pdo = get_db(false); }catch(Throwable $e){ $pdo = null; }
 
 $data = json_decode(file_get_contents('php://input'), true) ?: $_POST;
 $method = $_SERVER['REQUEST_METHOD'];
@@ -74,23 +74,28 @@ $method = $_SERVER['REQUEST_METHOD'];
 
 if($method === 'POST'){
   if(empty($data['id']) || empty($data['name'])){ http_response_code(400); echo json_encode(['error'=>'id and name required']); exit; }
-  $cart = &$_SESSION['cart']; if(!$cart) $cart = [];
+  if(empty($_SESSION['cart']) || !is_array($_SESSION['cart'])) $_SESSION['cart'] = [];
+  $cart = &$_SESSION['cart'];
   $found = false;
-  foreach($cart as &$it){ if($it['id']==$data['id']){ $it['qty'] = isset($data['qty']) ? (int)$data['qty'] : ($it['qty']+1); $found=true; break; } }
+  foreach($cart as &$it){ if($it['id']==$data['id']){ $it['qty'] = (int)($it['qty'] ?? 0) + (isset($data['qty']) ? (int)$data['qty'] : 1); $found=true; break; } }
   if(!$found){ $cart[] = ['id'=>$data['id'],'name'=>$data['name'],'price'=>floatval($data['price'] ?? 0),'qty'=>isset($data['qty'])?(int)$data['qty']:1]; }
   echo json_encode($cart); exit;
 }
 
 if($method === 'PUT'){
   if(empty($data['id'])){ http_response_code(400); echo json_encode(['error'=>'id required']); exit; }
-  $cart = &$_SESSION['cart']; if(!$cart) $cart = [];
+  if(empty($_SESSION['cart']) || !is_array($_SESSION['cart'])) $_SESSION['cart'] = [];
+  $cart = &$_SESSION['cart'];
   foreach($cart as &$it){ if($it['id']==$data['id']){ $it['qty'] = isset($data['qty']) ? (int)$data['qty'] : $it['qty']; break; } }
+  $cart = array_values(array_filter($cart, function($it){ return (int)($it['qty'] ?? 0) > 0; }));
+  $_SESSION['cart'] = $cart;
   echo json_encode($cart); exit;
 }
 
 if($method === 'DELETE'){
   if(empty($data['id'])){ http_response_code(400); echo json_encode(['error'=>'id required']); exit; }
-  $cart = &$_SESSION['cart']; if(!$cart) $cart = [];
+  if(empty($_SESSION['cart']) || !is_array($_SESSION['cart'])) $_SESSION['cart'] = [];
+  $cart = &$_SESSION['cart'];
   $cart = array_filter($cart, function($it) use($data){ return $it['id'] != $data['id']; });
   $_SESSION['cart'] = array_values($cart);
   echo json_encode($_SESSION['cart']); exit;

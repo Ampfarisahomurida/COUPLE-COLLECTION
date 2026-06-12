@@ -39,10 +39,36 @@ if($method === 'eft'){
   $status = !empty($data['payment_intent_id']) ? 'paid' : 'processing_card';
 }
 
-$pdo = get_db();
+$pdo = null;
+try{
+  $pdo = get_db(false);
+}catch(Throwable $e){
+  $pdo = null;
+}
+
 $user_id = !empty($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : null;
 $shipping = $data['shipping_address'] ?? null;
 $discreet = isset($data['discreet_shipping']) ? (int)$data['discreet_shipping'] : 1;
+
+if(!$pdo){
+  $orderId = 'LOCAL-' . time() . '-' . random_int(1000, 9999);
+  if(empty($_SESSION['orders'])){
+    $_SESSION['orders'] = [];
+  }
+  $_SESSION['orders'][] = [
+    'order_id' => $orderId,
+    'name' => $data['name'],
+    'email' => $data['email'],
+    'total' => $total,
+    'status' => $status,
+    'method' => $method,
+    'cart' => $data['cart'],
+    'created_at' => date('c')
+  ];
+  unset($_SESSION['cart']);
+  echo json_encode(['ok'=>true,'order_id'=>$orderId,'status'=>$status,'storage'=>'session']);
+  exit;
+}
 
 $ins = $pdo->prepare('INSERT INTO orders (user_id,total,status,shipping_address,discreet_shipping) VALUES (:user_id,:total,:status,:shipping,:discreet)');
 $ins->execute([

@@ -5,7 +5,7 @@ header('Content-Type: application/json');
 $useDb = false;
 try{
   require_once __DIR__ . '/../db.php';
-  $pdo = get_db();
+  $pdo = get_db(false);
   $useDb = true;
 }catch(Throwable $e){
   $useDb = false;
@@ -34,16 +34,21 @@ if($useDb){
 
 // Static fallback data
 $products = [
-  ['id'=>1,'name'=>'Sensual Massage Oil','short_description'=>'Lightly scented massage oil for couples.','description'=>'A light, non-greasy massage oil with natural ingredients.','category'=>'Category B','age_restricted'=>false,'price'=>129.99],
-  ['id'=>2,'name'=>'Discreet Intimacy Kit','short_description'=>'Tasteful kit with instructions and accessories.','description'=>'Curated intimacy kit designed for discretion and enjoyment.','category'=>'Category A','age_restricted'=>true,'price'=>499.00],
-  ['id'=>3,'name'=>'Couples Game Card Pack','short_description'=>'Fun prompts to connect and laugh together.','description'=>'A deck of conversation and activity prompts for couples.','category'=>'Category B','age_restricted'=>false,'price'=>199.50]
+  ['id'=>'date-night-kit','name'=>'Date Night Kit','short_description'=>'Everything needed for a memorable evening together.','description'=>'Everything needed for a memorable evening together.','category'=>'Date Night','age_restricted'=>false,'price'=>499.99,'image'=>'images/1348f53552fdf085e6f5a9f8c6bf1669.jpg'],
+  ['id'=>'massage-oil-set','name'=>'Massage Oil Set','short_description'=>'Relaxing aromatherapy oils for couples.','description'=>'Relaxing aromatherapy oils for couples.','category'=>'Wellness','age_restricted'=>false,'price'=>249.99,'image'=>'images/491e5580dbe04ce2e66f7f54a55563fa.jpg'],
+  ['id'=>'luxury-candle-set','name'=>'Luxury Candle Set','short_description'=>'Premium scented candles for romantic moments.','description'=>'Premium scented candles for romantic moments.','category'=>'Home','age_restricted'=>false,'price'=>199.99,'image'=>'images/candle.jpg'],
+  ['id'=>'chocolate-gift-box','name'=>'Chocolate Gift Box','short_description'=>'Delicious gourmet chocolates for sharing.','description'=>'Delicious gourmet chocolates for sharing.','category'=>'Gifts','age_restricted'=>false,'price'=>299.99,'image'=>'images/chocolate gift box.jpg'],
+  ['id'=>'couples-wellness-box','name'=>'Couples Wellness Box','short_description'=>'Self-care essentials for relaxation and comfort.','description'=>'Self-care essentials for relaxation and comfort.','category'=>'Wellness','age_restricted'=>false,'price'=>599.99,'image'=>'images/Couples Wellness Box.jpg'],
+  ['id'=>'anniversary-gift-collection','name'=>'Anniversary Gift Collection','short_description'=>'Elegant gifts designed for special celebrations.','description'=>'Elegant gifts designed for special celebrations.','category'=>'Gifts','age_restricted'=>false,'price'=>799.99,'image'=>'images/Anniversary Gift Collection.jpg'],
+  ['id'=>'matching-couple-mugs','name'=>'Matching Couple Mugs','short_description'=>'Stylish matching mugs for everyday moments.','description'=>'Stylish matching mugs for everyday moments.','category'=>'Home','age_restricted'=>false,'price'=>179.99,'image'=>'images/Matching Couple Mugs.jpg'],
+  ['id'=>'personalized-photo-frame','name'=>'Personalized Photo Frame','short_description'=>'Display your favorite memories together.','description'=>'Display your favorite memories together.','category'=>'Gifts','age_restricted'=>false,'price'=>349.99,'image'=>'images/Personalized Photo Frame.jpg']
 ];
 
 // If an id is provided, return single product from fallback
 if(isset($_GET['id'])){
-  $id = (int)$_GET['id'];
+  $id = $_GET['id'];
   foreach($products as $p){
-    if($p['id'] === $id){
+    if((string)$p['id'] === (string)$id){
       echo json_encode($p);
       exit;
     }
