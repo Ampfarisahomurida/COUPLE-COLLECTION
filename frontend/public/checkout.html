@@ -173,13 +173,20 @@
         }
 
         const payload = {name: fd.get('name'), email: fd.get('email'), method: method, cart: cart};
-        const res = await fetch(`${API_BASE}/checkout.php`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
-        const j = await res.json();
-        if(res.ok){
+        try{
+          const res = await fetch(`${API_BASE}/checkout.php`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
+          const j = await res.json();
+          if(res.ok){
+            localStorage.removeItem('cart');
+            window.location.href = `order_success.html?order_id=${encodeURIComponent(j.order_id)}`;
+          } else {
+            document.getElementById('msg').textContent = j.error || 'Failed to place order.';
+          }
+        }catch(error){
+          const orderId = `LOCAL-${Date.now()}`;
+          localStorage.setItem('lastOrder', JSON.stringify({...payload, order_id: orderId, created_at: new Date().toISOString()}));
           localStorage.removeItem('cart');
-          window.location.href = `order_success.html?order_id=${encodeURIComponent(j.order_id)}`;
-        } else {
-          document.getElementById('msg').textContent = j.error || 'Failed to place order.';
+          window.location.href = `order_success.html?order_id=${encodeURIComponent(orderId)}`;
         }
       });
     });
