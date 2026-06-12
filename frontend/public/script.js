@@ -8,7 +8,8 @@ const FALLBACK_PRODUCTS = [
     short_description: 'Everything needed for a memorable evening together.',
     description: 'Everything needed for a memorable evening together.',
     price: 499.99,
-    image: 'images/1348f53552fdf085e6f5a9f8c6bf1669.jpg'
+    image: 'images/1348f53552fdf085e6f5a9f8c6bf1669.jpg',
+    collections: ['Date Night Kits', 'New Arrivals', 'Most Loved']
   },
   {
     id: 'massage-oil-set',
@@ -17,7 +18,8 @@ const FALLBACK_PRODUCTS = [
     short_description: 'Relaxing aromatherapy oils for couples.',
     description: 'Relaxing aromatherapy oils for couples.',
     price: 249.99,
-    image: 'images/491e5580dbe04ce2e66f7f54a55563fa.jpg'
+    image: 'images/491e5580dbe04ce2e66f7f54a55563fa.jpg',
+    collections: ['Self-Care Sets', 'Most Loved']
   },
   {
     id: 'luxury-candle-set',
@@ -26,7 +28,8 @@ const FALLBACK_PRODUCTS = [
     short_description: 'Premium scented candles for romantic moments.',
     description: 'Premium scented candles for romantic moments.',
     price: 199.99,
-    image: 'images/candle.jpg'
+    image: 'images/candle.jpg',
+    collections: ['Date Night Kits', 'New Arrivals']
   },
   {
     id: 'chocolate-gift-box',
@@ -35,7 +38,8 @@ const FALLBACK_PRODUCTS = [
     short_description: 'Delicious gourmet chocolates for sharing.',
     description: 'Delicious gourmet chocolates for sharing.',
     price: 299.99,
-    image: 'images/chocolate gift box.jpg'
+    image: 'images/chocolate gift box.jpg',
+    collections: ['Date Night Kits', 'Most Loved']
   },
   {
     id: 'couples-wellness-box',
@@ -44,7 +48,8 @@ const FALLBACK_PRODUCTS = [
     short_description: 'Self-care essentials for relaxation and comfort.',
     description: 'Self-care essentials for relaxation and comfort.',
     price: 599.99,
-    image: 'images/Couples Wellness Box.jpg'
+    image: 'images/Couples Wellness Box.jpg',
+    collections: ['Self-Care Sets', 'New Arrivals', 'Most Loved']
   },
   {
     id: 'anniversary-gift-collection',
@@ -53,7 +58,8 @@ const FALLBACK_PRODUCTS = [
     short_description: 'Elegant gifts designed for special celebrations.',
     description: 'Elegant gifts designed for special celebrations.',
     price: 799.99,
-    image: 'images/Anniversary Gift Collection.jpg'
+    image: 'images/Anniversary Gift Collection.jpg',
+    collections: ['Most Loved', 'New Arrivals']
   },
   {
     id: 'matching-couple-mugs',
@@ -62,7 +68,8 @@ const FALLBACK_PRODUCTS = [
     short_description: 'Stylish matching mugs for everyday moments.',
     description: 'Stylish matching mugs for everyday moments.',
     price: 179.99,
-    image: 'images/Matching Couple Mugs.jpg'
+    image: 'images/Matching Couple Mugs.jpg',
+    collections: ['New Arrivals']
   },
   {
     id: 'personalized-photo-frame',
@@ -71,7 +78,8 @@ const FALLBACK_PRODUCTS = [
     short_description: 'Display your favorite memories together.',
     description: 'Display your favorite memories together.',
     price: 349.99,
-    image: 'images/Personalized Photo Frame.jpg'
+    image: 'images/Personalized Photo Frame.jpg',
+    collections: ['Most Loved']
   }
 ];
 
@@ -112,6 +120,12 @@ function formatPrice(value){
   return `R${Number(value || 0).toFixed(2)}`;
 }
 
+function escapeHtml(value){
+  const div = document.createElement('div');
+  div.textContent = String(value || '');
+  return div.innerHTML;
+}
+
 function getStoredArray(key){
   try{
     const value = JSON.parse(localStorage.getItem(key) || '[]');
@@ -144,6 +158,81 @@ function updateWishlistUI(){
   });
 }
 
+function getReviews(productId){
+  return getStoredArray(`reviews:${productId}`);
+}
+
+function saveReview(productId, review){
+  const reviews = getReviews(productId);
+  reviews.unshift(review);
+  localStorage.setItem(`reviews:${productId}`, JSON.stringify(reviews.slice(0, 20)));
+}
+
+function buildReviewSummary(productId){
+  const reviews = getReviews(productId);
+  if(!reviews.length){
+    return '<p class="review-empty">No reviews yet.</p>';
+  }
+  const average = reviews.reduce((sum, review) => sum + Number(review.rating || 0), 0) / reviews.length;
+  const latest = reviews[0];
+  return `
+    <p class="review-summary">${average.toFixed(1)} / 5 from ${reviews.length} review${reviews.length === 1 ? '' : 's'}</p>
+    <p class="review-latest">Latest: "${escapeHtml(latest.text)}" - ${escapeHtml(latest.name)}</p>
+  `;
+}
+
+function bindReviewForm(form, productId){
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const formData = new FormData(form);
+    const text = String(formData.get('review') || '').trim();
+    const name = String(formData.get('reviewer') || '').trim() || 'Customer';
+    const rating = Number(formData.get('rating') || 5);
+
+    if(!text){
+      form.querySelector('[data-review-message]').textContent = 'Please write a short review first.';
+      return;
+    }
+
+    saveReview(productId, {
+      name,
+      rating,
+      text,
+      created_at: new Date().toISOString()
+    });
+
+    form.reset();
+    form.querySelector('[data-review-message]').textContent = 'Review added. Thank you.';
+    const reviewBox = form.closest('.product-review');
+    const summary = reviewBox.querySelector('[data-review-summary]');
+    if(summary){
+      summary.innerHTML = buildReviewSummary(productId);
+    }
+  });
+}
+
+function getProductCollections(product){
+  if(Array.isArray(product.collections) && product.collections.length){
+    return product.collections;
+  }
+
+  const text = `${product.name || ''} ${product.category || ''}`.toLowerCase();
+  const collections = [];
+  if(text.includes('date') || text.includes('candle') || text.includes('chocolate')){
+    collections.push('Date Night Kits');
+  }
+  if(text.includes('wellness') || text.includes('massage') || text.includes('oil')){
+    collections.push('Self-Care Sets');
+  }
+  if(text.includes('anniversary') || text.includes('mugs') || text.includes('candle')){
+    collections.push('New Arrivals');
+  }
+  if(text.includes('gift') || text.includes('wellness') || text.includes('date') || text.includes('chocolate')){
+    collections.push('Most Loved');
+  }
+  return collections.length ? collections : ['New Arrivals'];
+}
+
 function buildProductCard(p){
   const card = document.createElement('article');
   card.className = 'product-card';
@@ -163,15 +252,34 @@ function buildProductCard(p){
           <div class="product-meta">${p.age_restricted ? '18+ product' : 'Ready to order'}</div>
         </div>
       </div>
-      <button class="add-cart" data-id="${p.id}" data-name="${encodeURIComponent(p.name)}" data-price="${p.price || 0}">Add to cart</button>
+      <div class="product-actions">
+        <button class="product-wish ${isWishlisted(p.id) ? 'active' : ''}" data-wishlist-btn="${p.id}">${isWishlisted(p.id) ? 'Saved' : 'Save'}</button>
+        <button class="add-cart" data-id="${p.id}" data-name="${encodeURIComponent(p.name)}" data-price="${p.price || 0}">Add to cart</button>
+      </div>
+      <form class="product-review" data-review-form="${p.id}">
+        <div data-review-summary>${buildReviewSummary(p.id)}</div>
+        <div class="review-fields">
+          <input name="reviewer" placeholder="Your name">
+          <select name="rating" aria-label="Rating">
+            <option value="5">5 stars</option>
+            <option value="4">4 stars</option>
+            <option value="3">3 stars</option>
+            <option value="2">2 stars</option>
+            <option value="1">1 star</option>
+          </select>
+        </div>
+        <textarea name="review" rows="2" placeholder="Write a review" required></textarea>
+        <button type="submit" class="review-submit">Submit review</button>
+        <p class="review-message" data-review-message></p>
+      </form>
     </div>
-    <button class="product-wish ${isWishlisted(p.id) ? 'active' : ''}" data-wishlist-btn="${p.id}">${isWishlisted(p.id) ? 'Saved' : 'Save'}</button>
   `;
 
   card.querySelector('[data-wishlist-btn]').addEventListener('click', (e) => {
     e.preventDefault();
     toggleWishlist(p.id);
   });
+  bindReviewForm(card.querySelector('[data-review-form]'), p.id);
 
   return card;
 }
@@ -193,7 +301,28 @@ function renderProducts(list){
     out.innerHTML = '<p class="message">No products found. Try adjusting your filters.</p>';
     return;
   }
-  list.forEach(product => out.appendChild(buildProductCard(product)));
+
+  if(out.dataset.groupedProducts === 'true'){
+    const groups = ['Date Night Kits', 'Self-Care Sets', 'New Arrivals', 'Most Loved'];
+    groups.forEach(group => {
+      const groupProducts = list.filter(product => getProductCollections(product).includes(group));
+      if(!groupProducts.length) return;
+
+      const section = document.createElement('section');
+      section.className = 'collection-section';
+      section.innerHTML = `
+        <div class="collection-head">
+          <h4>${group}</h4>
+        </div>
+        <div class="grid"></div>
+      `;
+      const grid = section.querySelector('.grid');
+      groupProducts.forEach(product => grid.appendChild(buildProductCard(product)));
+      out.appendChild(section);
+    });
+  } else {
+    list.forEach(product => out.appendChild(buildProductCard(product)));
+  }
   bindAddToCartButtons();
   updateWishlistUI();
 }
@@ -304,10 +433,28 @@ function renderProductDetail(p){
             <div class="product-meta">${p.age_restricted ? '18+ product' : 'Ready to order'}</div>
           </div>
         </div>
-        <button id="add-to-cart-detail">Add to cart</button>
+        <div class="product-actions">
+          <button class="product-wish ${isWishlisted(p.id) ? 'active' : ''}" data-wishlist-btn="${p.id}">${isWishlisted(p.id) ? 'Saved' : 'Save'}</button>
+          <button id="add-to-cart-detail">Add to cart</button>
+        </div>
+        <form class="product-review" data-review-form="${p.id}">
+          <div data-review-summary>${buildReviewSummary(p.id)}</div>
+          <div class="review-fields">
+            <input name="reviewer" placeholder="Your name">
+            <select name="rating" aria-label="Rating">
+              <option value="5">5 stars</option>
+              <option value="4">4 stars</option>
+              <option value="3">3 stars</option>
+              <option value="2">2 stars</option>
+              <option value="1">1 star</option>
+            </select>
+          </div>
+          <textarea name="review" rows="3" placeholder="Write a review" required></textarea>
+          <button type="submit" class="review-submit">Submit review</button>
+          <p class="review-message" data-review-message></p>
+        </form>
         <a href="shop.html">Back to shop</a>
       </div>
-      <button class="product-wish ${isWishlisted(p.id) ? 'active' : ''}" data-wishlist-btn="${p.id}">${isWishlisted(p.id) ? 'Saved' : 'Save'}</button>
     </article>
   `;
 
@@ -315,6 +462,7 @@ function renderProductDetail(p){
     e.preventDefault();
     toggleWishlist(p.id);
   });
+  bindReviewForm(out.querySelector('[data-review-form]'), p.id);
 
   if(p.age_restricted){
     showAgeGate();

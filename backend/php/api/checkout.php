@@ -3,6 +3,8 @@ header('Content-Type: application/json');
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../session.php';
 
+$deliveryFee = 99.99;
+
 if($_SERVER['REQUEST_METHOD'] !== 'POST'){
   http_response_code(405);
   echo json_encode(['error'=>'Method not allowed']);
@@ -10,7 +12,7 @@ if($_SERVER['REQUEST_METHOD'] !== 'POST'){
 }
 
 $data = json_decode(file_get_contents('php://input'), true) ?: $_POST;
-if(empty($data['cart']) || empty($data['name']) || empty($data['email'])){
+if(empty($data['cart']) || empty($data['name']) || empty($data['email']) || empty($data['shipping_address'])){
   http_response_code(400);
   echo json_encode(['error'=>'Missing fields']);
   exit;
@@ -28,6 +30,7 @@ foreach($data['cart'] as $item){
   $qty = isset($item['qty']) ? intval($item['qty']) : 1;
   $total += $price * $qty;
 }
+$total += $deliveryFee;
 
 $method = strtolower(trim($data['method'] ?? 'card'));
 $status = 'pending';
@@ -60,6 +63,7 @@ if(!$pdo){
     'name' => $data['name'],
     'email' => $data['email'],
     'total' => $total,
+    'delivery_fee' => $deliveryFee,
     'status' => $status,
     'method' => $method,
     'cart' => $data['cart'],

@@ -389,6 +389,21 @@ main {
   gap: 1.25rem
 }
 
+.collection-grid {
+  display: grid;
+  gap: 2rem
+}
+
+.collection-section {
+  display: grid;
+  gap: 1rem
+}
+
+.collection-head h4 {
+  margin: 0;
+  font-size: 1.25rem
+}
+
 .product-card {
   background: var(--surface);
   border: 1px solid rgba(15, 23, 42, 0.08);
@@ -407,9 +422,6 @@ main {
 }
 
 .product-wish {
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
   min-width: 64px;
   min-height: 40px;
   padding: 0 0.85rem;
@@ -496,6 +508,12 @@ main {
   flex-wrap: wrap
 }
 
+.product-actions {
+  display: grid;
+  gap: 0.65rem;
+  margin-top: 0.25rem
+}
+
 .product-price {
   font-size: 1.25rem;
   font-weight: 800;
@@ -508,7 +526,6 @@ main {
 }
 
 .product-card button {
-  margin-top: 1rem;
   align-self: start;
   width: 100%;
   padding: 0.95rem 1.1rem;
@@ -519,6 +536,83 @@ main {
   cursor: pointer;
   font-weight: 700;
   transition: transform .2s ease, background .2s ease
+}
+
+.product-card .product-wish {
+  background: var(--surface-strong);
+  color: var(--brand-dark);
+  border: 1px solid #d1d5db
+}
+
+.product-card .product-wish.active {
+  background: var(--brand-accent);
+  border-color: var(--brand-accent)
+}
+
+.product-review {
+  display: grid;
+  gap: 0.65rem;
+  margin-top: 0.4rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid #e5e7eb;
+  text-align: left
+}
+
+.review-summary,
+.review-empty,
+.review-latest,
+.review-message {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--text-muted)
+}
+
+.review-latest {
+  line-height: 1.45
+}
+
+.review-fields {
+  display: grid;
+  grid-template-columns: 1fr 120px;
+  gap: 0.6rem
+}
+
+.product-review input,
+.product-review select,
+.product-review textarea {
+  border-radius: 10px;
+  padding: 0.75rem;
+  background: var(--surface-strong)
+}
+
+.product-review textarea {
+  resize: vertical
+}
+
+.product-card .review-submit {
+  margin-top: 0;
+  padding: 0.75rem;
+  background: #334155
+}
+
+.checkout-section-title {
+  margin-top: 1.25rem;
+  font-weight: 800;
+  color: var(--text-primary)
+}
+
+.order-totals {
+  display: grid;
+  gap: 0.6rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e5e7eb
+}
+
+.order-totals div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem
 }
 
 .product-card button:hover {
@@ -637,7 +731,8 @@ label {
 }
 
 input,
-select {
+select,
+textarea {
   width: 100%;
   padding: 0.95rem 1rem;
   border: 1px solid #d1d5db;
@@ -898,11 +993,6 @@ footer.site-footer {
     line-height: 1.45
   }
 
-  .product-wish {
-    top: 0.75rem;
-    right: 0.75rem
-  }
-
   .page-shell {
     margin: 1rem;
     padding: 1rem;
@@ -962,6 +1052,12 @@ footer.site-footer {
   .card-section {
     padding: 1rem;
     border-radius: 14px
+  }
+
+  .review-fields,
+  .order-totals div {
+    grid-template-columns: 1fr;
+    flex-direction: column
   }
 
   .footer-inner {

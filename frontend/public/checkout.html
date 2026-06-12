@@ -30,6 +30,13 @@
         <label>Name <input name="name" required></label>
         <label>Email <input name="email" type="email" required></label>
       </div>
+      <div class="checkout-section-title">Delivery address</div>
+      <label>Street address <input name="address" autocomplete="street-address" required></label>
+      <div class="field-row">
+        <label>City <input name="city" autocomplete="address-level2" required></label>
+        <label>Postal code <input name="postal_code" autocomplete="postal-code" required></label>
+      </div>
+      <label>Delivery notes <textarea name="delivery_notes" rows="3" placeholder="Apartment, gate code, or delivery instructions"></textarea></label>
       <label>Payment method
         <select name="method" id="payment-method">
           <option value="eft">Instant EFT</option>
@@ -49,9 +56,10 @@
   <script src="https://js.stripe.com/v3/"></script>
   <script>
     const API_BASE = '/backend/php/api';
+    const DELIVERY_FEE = 99.99;
 
     function formatPrice(value){
-      return `R${value.toFixed(2)}`;
+      return `R${Number(value || 0).toFixed(2)}`;
     }
 
     function renderSummary(cart){
@@ -65,9 +73,13 @@
       container.innerHTML = cart.map(item => {
         const itemTotal = (item.price||0) * (item.qty||1);
         total += itemTotal;
-        return `<div class="cart-row"><div>${item.name}</div><div>${item.qty} × ${formatPrice(item.price||0)}</div><div>${formatPrice(itemTotal)}</div></div>`;
-      }).join('');
-      document.getElementById('checkout-total').textContent = `Total: ${formatPrice(total)}`;
+        return `<div class="cart-row"><div>${item.name}</div><div>${item.qty} x ${formatPrice(item.price||0)}</div><div>${formatPrice(itemTotal)}</div></div>`;
+      }).join('') + `
+        <div class="order-totals">
+          <div><span>Products subtotal</span><strong>${formatPrice(total)}</strong></div>
+          <div><span>Delivery fee</span><strong>${formatPrice(DELIVERY_FEE)}</strong></div>
+        </div>`;
+      document.getElementById('checkout-total').textContent = `Total including delivery: ${formatPrice(total + DELIVERY_FEE)}`;
     }
 
     async function initStripe(){
@@ -130,7 +142,15 @@
         e.preventDefault();
         const fd = new FormData(e.target);
         if(!cart.length){ document.getElementById('msg').textContent = 'Your cart is empty.'; return; }
-        const totalCents = Math.round(cart.reduce((s,i)=>s + (Number(i.price)||0)*(Number(i.qty)||1),0) * 100);
+        const shippingAddress = [
+          fd.get('address'),
+          fd.get('city'),
+          fd.get('postal_code'),
+          fd.get('delivery_notes') ? `Notes: ${fd.get('delivery_notes')}` : ''
+        ].filter(Boolean).join(', ');
+        const productTotal = cart.reduce((s,i)=>s + (Number(i.price)||0)*(Number(i.qty)||1),0);
+        const orderTotal = productTotal + DELIVERY_FEE;
+        const totalCents = Math.round(orderTotal * 100);
         const method = fd.get('method');
 
         if(method === 'card'){
@@ -168,7 +188,10 @@
                 email: fd.get('email'),
                 method: 'card',
                 payment_intent_id: result.paymentIntent.id,
-                cart: cart
+                cart: cart,
+                shipping_address: shippingAddress,
+                delivery_fee: DELIVERY_FEE,
+                order_total: orderTotal
               })
             });
             const orderData = await orderRes.json();
@@ -184,7 +207,15 @@
           return;
         }
 
-        const payload = {name: fd.get('name'), email: fd.get('email'), method: method, cart: cart};
+        const payload = {
+          name: fd.get('name'),
+          email: fd.get('email'),
+          method: method,
+          cart: cart,
+          shipping_address: shippingAddress,
+          delivery_fee: DELIVERY_FEE,
+          order_total: orderTotal
+        };
         try{
           const res = await fetch(`${API_BASE}/checkout.php`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
           const j = await res.json();
