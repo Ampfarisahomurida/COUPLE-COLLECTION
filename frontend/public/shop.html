@@ -5,57 +5,73 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Shop — Couple Collection</title>
   <link rel="stylesheet" href="styles.css" />
+  <script>document.documentElement.classList.add('auth-pending');</script>
 </head>
 <body>
+  <div class="site-utility">
+    <span>Thoughtful finds for the moments you share</span>
+    <span>South African store <span aria-hidden="true">·</span> Prices in ZAR</span>
+  </div>
   <header class="site-header">
     <div class="brand">
-      <a href="index.html"><span class="logo-mark">CC</span><span class="brand-name">Couple Collection</span></a>
+      <a href="index.html" aria-label="Couple Collection home"><span class="logo-mark">CC</span><span class="brand-name">Couple Collection</span></a>
     </div>
     <form class="search-bar" action="shop.html">
-      <input id="search-input" type="search" name="q" placeholder="Search for candles, sets, or romantic gifts" />
-      <button type="submit">Search</button>
+      <label class="sr-only" for="search-input">Search products</label>
+      <input id="search-input" type="search" name="q" placeholder="Search gifts, date-night finds and more" />
+      <button type="submit" aria-label="Search">⌕</button>
     </form>
     <nav class="site-nav">
       <a href="index.html">Home</a>
-      <a href="cart.html">Cart</a>
-      <a href="checkout.html">Checkout</a>
+      <a href="cart.html" class="nav-cart">Basket <span data-cart-count>0</span></a>
     </nav>
   </header>
+  <nav class="category-nav" aria-label="Shop categories">
+    <a href="shop.html">All finds</a>
+    <a href="shop.html?q=date">Date night</a>
+    <a href="shop.html?q=wellness">Wellness</a>
+    <a href="shop.html?q=gift">Gifts</a>
+    <a href="shop.html?q=home">Home favourites</a>
+  </nav>
 
   <main>
     <section class="store-toolbar">
       <div>
-        <h3>Find the perfect gift</h3>
-        <p>Browse our catalog and add items to your cart with a smooth, modern shopping experience.</p>
+        <span class="section-kicker">THE FULL COLLECTION</span>
+        <h3>Find your next favourite</h3>
+        <p>Browse thoughtful gifts, date-night finds and feel-good essentials.</p>
       </div>
-      <div class="sort-chip">Popular now</div>
+      <label class="sort-control">Sort by
+        <select id="sort-products" aria-label="Sort products">
+          <option value="featured">Featured</option>
+          <option value="price-low">Price: low to high</option>
+          <option value="price-high">Price: high to low</option>
+          <option value="name">Name: A to Z</option>
+        </select>
+      </label>
     </section>
 
     <section class="shop-container">
       <aside class="filter-sidebar">
         <div class="filter-section">
-          <h4>Categories</h4>
+          <h4>Shop by category</h4>
           <div id="category-filters" class="filter-list"></div>
         </div>
         <div class="filter-section">
-          <h4>Price range</h4>
-          <label>Min <input type="number" id="price-min" placeholder="0" min="0"></label>
-          <label>Max <input type="number" id="price-max" placeholder="5000" min="0"></label>
-          <button id="apply-price">Apply</button>
-        </div>
-        <div class="filter-section">
-          <h4>Ratings</h4>
-          <label><input type="checkbox" value="5"> ★★★★★ 5 stars</label>
-          <label><input type="checkbox" value="4"> ★★★★ 4+ stars</label>
-          <label><input type="checkbox" value="3"> ★★★ 3+ stars</label>
+          <h4>Price (R)</h4>
+          <div class="price-fields">
+            <label>From <input type="number" id="price-min" placeholder="0" min="0" step="1"></label>
+            <label>To <input type="number" id="price-max" placeholder="5000" min="0" step="1"></label>
+          </div>
+          <button id="apply-price">Apply price</button>
         </div>
       </aside>
 
       <section id="shop" class="product-list">
         <div class="section-head">
           <div>
-            <h3>Shop curated essentials</h3>
-            <p>Discover products across top categories.</p>
+            <h3>All finds</h3>
+            <p id="results-count" aria-live="polite">Browse the collection.</p>
           </div>
         </div>
         <div id="products" class="grid"></div>
@@ -70,6 +86,7 @@
     </div>
   </footer>
 
+  <script src="auth.js"></script>
   <script src="script.js"></script>
 </body>
 </html>

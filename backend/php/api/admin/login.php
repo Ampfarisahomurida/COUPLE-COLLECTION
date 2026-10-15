@@ -38,6 +38,7 @@ if(!(int)$user['is_admin']){
 }
 
 // Set session
+session_regenerate_id(true);
 $_SESSION['admin_id'] = (int)$user['id'];
 $_SESSION['admin_email'] = $user['email'];
 $_SESSION['is_admin'] = 1;

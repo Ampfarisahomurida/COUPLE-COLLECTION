@@ -5,12 +5,34 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Product — Couple Collection</title>
   <link rel="stylesheet" href="styles.css" />
+  <script>document.documentElement.classList.add('auth-pending');</script>
 </head>
 <body>
+  <div class="site-utility">
+    <span>Thoughtful finds for the moments you share</span>
+    <span>South African store <span aria-hidden="true">·</span> Prices in ZAR</span>
+  </div>
   <header class="site-header">
-    <h1>Couple Collection</h1>
-    <nav><a href="index.html">Home</a> · <a href="shop.html">Shop</a> · <a href="cart.html">Cart</a></nav>
+    <div class="brand">
+      <a href="index.html" aria-label="Couple Collection home"><span class="logo-mark">CC</span><span class="brand-name">Couple Collection</span></a>
+    </div>
+    <form class="search-bar" action="shop.html">
+      <label class="sr-only" for="search-input">Search products</label>
+      <input id="search-input" type="search" name="q" placeholder="Search gifts, date-night finds and more">
+      <button type="submit" aria-label="Search">⌕</button>
+    </form>
+    <nav class="site-nav">
+      <a href="shop.html">Browse</a>
+      <a href="cart.html" class="nav-cart">Basket <span data-cart-count>0</span></a>
+    </nav>
   </header>
+  <nav class="category-nav" aria-label="Shop categories">
+    <a href="shop.html">All finds</a>
+    <a href="shop.html?q=date">Date night</a>
+    <a href="shop.html?q=wellness">Wellness</a>
+    <a href="shop.html?q=gift">Gifts</a>
+    <a href="shop.html?q=home">Home favourites</a>
+  </nav>
 
   <main>
     <section id="product-details" class="product-list">
@@ -20,8 +42,8 @@
   </main>
 
   <div id="age-gate" class="age-gate" style="display:none;">
-    <div class="age-gate-inner">
-      <h3>Age Verification</h3>
+    <div class="age-gate-inner" role="dialog" aria-modal="true" aria-labelledby="age-title">
+      <h3 id="age-title">Age Verification</h3>
       <p>This product is intended for adults 18 years or older. Please confirm your age to continue.</p>
       <div class="age-actions">
         <button id="confirm-age">I am 18+</button>
@@ -30,13 +52,24 @@
     </div>
   </div>
 
-  <footer>
+  <footer class="site-footer">
+    <div class="footer-inner">
     <small>&copy; Couple Collection</small>
+    <span>Thoughtful finds for the moments you share</span>
+    </div>
   </footer>
 
+  <script src="auth.js"></script>
   <script src="script.js"></script>
   <script>
-    document.getElementById('confirm-age').addEventListener('click', ()=>{ document.getElementById('age-gate').style.display='none'; });
+    document.getElementById('confirm-age').addEventListener('click', async ()=>{
+      const response = await fetch('/backend/php/api/age_verification.php', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({confirm:true})
+      });
+      if(response.ok) document.getElementById('age-gate').style.display='none';
+    });
     document.getElementById('deny-age').addEventListener('click', ()=>{ window.location.href='shop.html'; });
   </script>
 </body>

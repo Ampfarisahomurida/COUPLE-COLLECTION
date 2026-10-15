@@ -1,12 +1,36 @@
 services:
   - type: web
     name: couple-collection-shop
-    env: docker
+    runtime: docker
     dockerfilePath: Dockerfile
-    plan: starter
+    dockerCommand: php -S 0.0.0.0:$PORT router.php
+    plan: 0.5c-512mb
     branch: main
+    healthCheckPath: /backend/php/api/payment/stripe_config.php
+    disk:
+      name: product-uploads
+      mountPath: /var/www/html/backend/php/uploads
+      sizeGB: 1
     envVars:
       - key: DB_NAME
         value: couple_collection
+      - key: DB_HOST
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASS
+        sync: false
       - key: SITE_NAME
         value: Couple Collection
+      - key: DELIVERY_FEE
+        value: "99.99"
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: STRIPE_SECRET
+        sync: false
+      - key: STRIPE_PUB
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false

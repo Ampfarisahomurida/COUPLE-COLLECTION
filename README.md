@@ -1,121 +1,53 @@
-Couple Collection — E-Commerce Prototype
-=====================================
+# Couple Collection
 
-This repository is an initial scaffold for the Couple Collection Online Shop.
+A responsive storefront built with HTML/CSS/JavaScript, a PHP API, and MySQL. Customers create an account or sign in before entering the storefront, adding products to their basket, or checking out.
 
-Tech stack (initial):
-- Frontend: static HTML/CSS/JS in frontend/public
-- Backend: PHP (simple API) in backend/php
-- Database: MySQL / MariaDB (sql/schema.sql)
+## Run with Docker
 
-Quick start (PHP built-in server):
+1. Copy `.env.example` to `.env` and set database and admin credentials. Keep `.env` private; it is ignored by Git. Set the configured MySQL connection details for the environment where the app runs. Add Stripe keys when card payments are ready.
+2. From the repository root, run:
 
-```bash
-cd "c:\Users\murid\OneDrive\Desktop\couple-collection-shop"
-php -S 0.0.0.0:8000 router.php
-```
+   ```powershell
+   docker compose up --build -d
+   docker compose exec php php backend/php/seed.php
+   ```
 
-Open the site at:
+3. Open `http://localhost:8080` and create a customer account or sign in. The owner portal is at `/backend/php/admin/dashboard.php`.
 
-```text
-http://localhost:8000/
-```
+The seed command creates the initial catalog and only creates an administrator when valid `ADMIN_EMAIL` and `ADMIN_PASSWORD` values are set. Keep `.env` private.
 
-This serves the frontend from `frontend/public` and routes API requests to `backend/php/api`.
+The owner portal uses the configured administrator account and includes confirmed sales totals, order status and EFT payment counts, registered-customer totals, recent customer registrations, and product management. Customer registration is separate from owner access; new customers start by creating an account on the sign-in page.
 
-Next steps: implement product pages, admin dashboard, payment integration, and age verification.
+## Run locally with PHP
 
-Database setup
---------------
-The project uses MySQL / MariaDB. Either import the provided SQL schema or run the PHP seed script which will create the database, tables, and sample products.
+Install PHP with PDO MySQL enabled and Composer, start MySQL, and copy `.env.example` to `.env`. Set `DB_HOST`, `DB_NAME`, `DB_USER`, and `DB_PASS` to a MySQL account that can create and use the store database. Set `ADMIN_EMAIL` to your owner login and choose a unique `ADMIN_PASSWORD` with at least 12 characters. The local PHP server and seed command load values from `.env`; operating-system environment variables take precedence. From the repository root:
 
-Option 1 — import SQL:
-
-```bash
-mysql -u root -p < sql/schema.sql
-```
-
-Option 2 — run the PHP seed script (simpler when using local PHP + DB credentials configured in `backend/php/config.php`):
-
-```bash
-php "c:\Users\murid\OneDrive\Desktop\couple-collection-shop\backend\php\seed.php"
-```
-
-After setting up the database, the backend API at `http://localhost:8000/api/products` will return products from the DB.
-
-Admin access
-------------
-The seed script creates a default admin user when no users exist:
-
-- Email: admin@example.com
-- Password: ChangeMe123!
-
-To access the admin dashboard, open:
-
-```
-file://c:/Users/murid/OneDrive/Desktop/couple-collection-shop/backend/php/admin/dashboard.php
-```
-
-Admin API endpoints (session-based):
-- `POST /api/admin/login.php` — body: `{ "email": "...", "password": "..." }`
-- `GET /api/admin/logout.php` — destroys session
-- `GET /api/admin/products.php` — list products
-- `POST /api/admin/products.php` — create product (admin only)
-- `PUT /api/admin/products.php` — update product (admin only)
-- `DELETE /api/admin/products.php` — delete product (admin only)
-
-Security & password reset
--------------------------
-- CSRF protection: admin write endpoints require a valid CSRF token supplied in the `X-CSRF-Token` header or as `csrf_token` in the body. The admin dashboard includes the token in forms.
-
-Password reset (development flow):
-- `POST /api/admin/request_reset.php` — body `{ "email": "..." }` returns a `reset_token` (in production this token should be emailed)
-- `POST /api/admin/reset_password.php` — body `{ "token": "...", "password": "..." }` to complete the reset
-
-Cart & Checkout (scaffold)
--------------------------
-- Frontend: `frontend/public/cart.html`, `frontend/public/checkout.html` (uses localStorage for cart)
-- API: `backend/php/api/checkout.php` — placeholder that records an order and returns a placeholder payment status
-
-Payment, cart sync, uploads, tests & deploy
-------------------------------------------
-- Stripe scaffolding endpoints: `backend/php/api/payment/create_intent.php` and `backend/php/api/payment/webhook.php` (webhook logs to `backend/php/logs/payment_webhook.log`). Configure keys in `backend/php/config.php` or environment variables `STRIPE_SECRET` and `STRIPE_PUB`.
-- Server-side cart API: `backend/php/api/cart.php` (session-backed). Frontend Add-to-cart buttons sync to this API and also persist to `localStorage`.
-- Admin image uploads: `backend/php/api/admin/upload_image.php` saves uploaded images to `backend/php/uploads/`.
-- Admin edit UI now uses a modal with image upload support.
-- Basic test runner: `tests/run_tests.php` and deploy scripts `deploy.sh` and `deploy.ps1`.
-
-Run tests and deploy (local)
-```bash
-# Run tests (ensure backend server running on localhost:8000)
-php tests/run_tests.php
-
-# Quick deploy (runs seed and prepares uploads)
-bash deploy.sh
-# or on Windows PowerShell
-.\\deploy.ps1
-
-Stripe setup
-------------
-This project now includes Stripe SDK integration. To use Stripe locally:
-
-1. Install PHP dependencies (Composer) in the `backend/php` folder:
-
-```bash
-cd backend/php
+```powershell
+Set-Location backend\php
 composer install
+Set-Location ..\..
+php backend\php\seed.php
+php -S 127.0.0.1:8000 router.php
 ```
 
-2. Set environment variables (or edit `backend/php/config.php`) with your Stripe keys:
+Open `http://127.0.0.1:8000`. The seed command creates the tables and the configured owner account. If MySQL reports access denied, correct the credentials in `.env` for the MySQL instance you started; do not put database credentials in PHP source files.
 
-```bash
-export STRIPE_SECRET=sk_live_...
-export STRIPE_PUB=pk_live_...
-export STRIPE_WEBHOOK_SECRET=whsec_...
+## Deploy to Render
+
+The included `render.yaml` deploys the PHP app, but it does not provision MySQL. Create a reachable MySQL database first, then deploy the Blueprint from the `main` branch. In the service environment settings, provide `DB_HOST`, `DB_NAME`, `DB_USER`, and `DB_PASS` for that database, plus a unique `ADMIN_EMAIL` and an `ADMIN_PASSWORD` of at least 12 characters. The database must already exist, and its user must be allowed to create and update tables. Keep production credentials in Render's environment settings, never in the repository or Docker image.
+
+After the service is deployed and its database settings are present, run `php backend/php/seed.php` once from the service shell to create the tables, sample catalog, and configured owner account. Set `STRIPE_SECRET`, `STRIPE_PUB`, and `STRIPE_WEBHOOK_SECRET` to live Stripe values before enabling card payments; without them, card checkout stays disabled. Render provides HTTPS for the deployed service. Configure real shipping, returns, support, privacy, terms, and any legally required age-assurance details before accepting customers.
+
+## Payments and launch configuration
+
+Card checkout uses Stripe PaymentIntents. Set `STRIPE_SECRET`, `STRIPE_PUB`, and `STRIPE_WEBHOOK_SECRET` to the keys for the correct environment; do not commit live keys. The server calculates product prices and the configured flat `DELIVERY_FEE` (R99.99 by default), verifies successful Stripe payments, checks stock, and saves orders and order items in the database. EFT orders reserve stock, remain awaiting payment, and are not marked paid; the store must confirm payment before dispatch. Mobile wallet checkout is not offered because no wallet provider is integrated.
+
+The age gate records a customer’s self-confirmation in the session; it is not third-party age assurance and may not meet the legal requirements in your market. Before accepting customers, the store owner still needs to configure compliant age assurance where required, live payment credentials, shipping and return terms, a customer support contact, privacy/terms disclosures, and production HTTPS/hosting. These depend on real business details and should not be replaced with invented information.
+
+## Tests
+
+With the local PHP server running, execute:
+
+```powershell
+php tests\run_tests.php
 ```
-
-3. Expose your local webhook endpoint to Stripe (during development) using a tool like `stripe listen` or `ngrok`, and configure the webhook secret.
-
-4. The client checkout page uses Stripe.js; the server endpoint `backend/php/api/payment/create_intent.php` creates PaymentIntents using the secret key, and `backend/php/api/payment/webhook.php` verifies webhook signatures when `STRIPE_WEBHOOK_SECRET` is set.
-```
-

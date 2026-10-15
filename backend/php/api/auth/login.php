@@ -8,9 +8,14 @@ if($_SERVER['REQUEST_METHOD'] !== 'POST'){
 }
 
 $data = json_decode(file_get_contents('php://input'), true) ?: $_POST;
-$email = trim($data['email'] ?? '');
-$password = $data['password'] ?? '';
-if(!$email || !$password){ http_response_code(400); echo json_encode(['error'=>'email and password required']); exit; }
+$email = strtolower(trim((string)($data['email'] ?? '')));
+$password = (string)($data['password'] ?? '');
+if(!verify_csrf_token($_SERVER['HTTP_X_CSRF_TOKEN'] ?? ($data['csrf_token'] ?? null))){
+  http_response_code(403); echo json_encode(['error'=>'Please refresh the page and try again']); exit;
+}
+if(!filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($email) > 255 || $password === ''){
+  http_response_code(400); echo json_encode(['error'=>'Enter a valid email address and password']); exit;
+}
 
 $pdo = get_db();
 $stmt = $pdo->prepare('SELECT id,email,password_hash,is_admin FROM users WHERE email = :email LIMIT 1');
@@ -19,9 +24,16 @@ $user = $stmt->fetch(PDO::FETCH_ASSOC);
 if(!$user || !password_verify($password, $user['password_hash'])){ http_response_code(401); echo json_encode(['error'=>'Invalid credentials']); exit; }
 
 // Set session for normal user
+session_regenerate_id(true);
 $_SESSION['user_id'] = (int)$user['id'];
 $_SESSION['email'] = $user['email'];
-if((int)$user['is_admin']) $_SESSION['is_admin'] = 1;
+if((int)$user['is_admin']){
+  $_SESSION['is_admin'] = 1;
+  $_SESSION['admin_id'] = (int)$user['id'];
+  $_SESSION['admin_email'] = $user['email'];
+}else{
+  unset($_SESSION['is_admin'], $_SESSION['admin_id'], $_SESSION['admin_email']);
+}
 
 // Merge session cart into DB cart if present
 if(!empty($_SESSION['cart'])){
@@ -51,4 +63,4 @@ if(!empty($_SESSION['cart'])){
   unset($_SESSION['cart']);
 }
 
-echo json_encode(['ok'=>true,'user_id'=>$_SESSION['user_id']]);
+echo json_encode(['ok'=>true,'user_id'=>$_SESSION['user_id'],'email'=>$_SESSION['email'],'is_admin'=>!empty($_SESSION['is_admin'])]);

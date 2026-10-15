@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS products (
   name VARCHAR(255) NOT NULL,
   description TEXT,
   category VARCHAR(64),
+  image_path VARCHAR(512),
   price DECIMAL(10,2) DEFAULT 0.00,
   stock INT DEFAULT 0,
   age_restricted TINYINT(1) DEFAULT 0,
@@ -29,8 +30,25 @@ CREATE TABLE IF NOT EXISTS orders (
   status VARCHAR(64) DEFAULT 'pending',
   shipping_address TEXT,
   discreet_shipping TINYINT(1) DEFAULT 1,
+  customer_name VARCHAR(160) NOT NULL,
+  customer_email VARCHAR(255) NOT NULL,
+  payment_method VARCHAR(32) NOT NULL,
+  payment_reference VARCHAR(255) NULL UNIQUE,
+  delivery_fee DECIMAL(10,2) NOT NULL DEFAULT 0.00,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+CREATE TABLE IF NOT EXISTS order_items (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  order_id INT NOT NULL,
+  product_id INT NOT NULL,
+  product_name VARCHAR(255) NOT NULL,
+  unit_price DECIMAL(10,2) NOT NULL,
+  quantity INT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
+  FOREIGN KEY (product_id) REFERENCES products(id)
 );
 
 CREATE TABLE IF NOT EXISTS carts (

@@ -19,14 +19,14 @@ if($method === 'GET'){
   // list or single product
   if(isset($_GET['id'])){
     $id = (int)$_GET['id'];
-    $stmt = $pdo->prepare('SELECT id, sku, name, short_description, description, category, price, stock, age_restricted FROM products WHERE id = :id');
+    $stmt = $pdo->prepare('SELECT id, sku, name, short_description, description, category, image_path AS image, price, stock, age_restricted FROM products WHERE id = :id');
     $stmt->execute([':id'=>$id]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
     if($row) echo json_encode($row);
     else{ http_response_code(404); echo json_encode(['error'=>'Product not found']); }
     exit;
   }
-  $stmt = $pdo->query('SELECT id, sku, name, short_description, category, price, stock, age_restricted FROM products ORDER BY id DESC');
+  $stmt = $pdo->query('SELECT id, sku, name, short_description, category, image_path AS image, price, stock, age_restricted FROM products ORDER BY id DESC');
   $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
   echo json_encode($rows);
   exit;
@@ -42,13 +42,14 @@ if($method === 'POST'){
     echo json_encode(['error'=>'Invalid CSRF token']);
     exit;
   }
-  $stmt = $pdo->prepare('INSERT INTO products (sku,name,short_description,description,category,price,stock,age_restricted) VALUES (:sku,:name,:short,:desc,:cat,:price,:stock,:age)');
+  $stmt = $pdo->prepare('INSERT INTO products (sku,name,short_description,description,category,image_path,price,stock,age_restricted) VALUES (:sku,:name,:short,:desc,:cat,:image,:price,:stock,:age)');
   $stmt->execute([
     ':sku'=>$data['sku'] ?? null,
     ':name'=>$data['name'] ?? 'Untitled',
     ':short'=>$data['short_description'] ?? null,
     ':desc'=>$data['description'] ?? null,
     ':cat'=>$data['category'] ?? null,
+    ':image'=>$data['image_path'] ?? $data['image'] ?? null,
     ':price'=>isset($data['price']) ? $data['price'] : 0.00,
     ':stock'=>isset($data['stock']) ? $data['stock'] : 0,
     ':age'=>isset($data['age_restricted']) ? $data['age_restricted'] : 0,
@@ -67,13 +68,14 @@ if($method === 'PUT'){
     exit;
   }
   if(empty($data['id'])){ http_response_code(400); echo json_encode(['error'=>'id required']); exit; }
-  $stmt = $pdo->prepare('UPDATE products SET sku=:sku,name=:name,short_description=:short,description=:desc,category=:cat,price=:price,stock=:stock,age_restricted=:age WHERE id=:id');
+  $stmt = $pdo->prepare('UPDATE products SET sku=:sku,name=:name,short_description=:short,description=:desc,category=:cat,image_path=:image,price=:price,stock=:stock,age_restricted=:age WHERE id=:id');
   $stmt->execute([
     ':sku'=>$data['sku'] ?? null,
     ':name'=>$data['name'] ?? 'Untitled',
     ':short'=>$data['short_description'] ?? null,
     ':desc'=>$data['description'] ?? null,
     ':cat'=>$data['category'] ?? null,
+    ':image'=>$data['image_path'] ?? $data['image'] ?? null,
     ':price'=>isset($data['price']) ? $data['price'] : 0.00,
     ':stock'=>isset($data['stock']) ? $data['stock'] : 0,
     ':age'=>isset($data['age_restricted']) ? $data['age_restricted'] : 0,

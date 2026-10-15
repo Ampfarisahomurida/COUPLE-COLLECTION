@@ -15,7 +15,7 @@ if($useDb){
   try{
     if(isset($_GET['id'])){
       $id = (int)$_GET['id'];
-      $stmt = $pdo->prepare('SELECT id, sku, name, description, category, price, stock, age_restricted FROM products WHERE id = :id');
+      $stmt = $pdo->prepare('SELECT id, sku, name, short_description, description, category, image_path AS image, price, stock, age_restricted FROM products WHERE id = :id');
       $stmt->execute([':id'=>$id]);
       $row = $stmt->fetch(PDO::FETCH_ASSOC);
       if($row) echo json_encode($row);
@@ -23,7 +23,7 @@ if($useDb){
       exit;
     }
 
-    $stmt = $pdo->query('SELECT id, sku, name, short_description, description, category, price, stock, age_restricted FROM products ORDER BY id ASC');
+    $stmt = $pdo->query('SELECT id, sku, name, short_description, description, category, image_path AS image, price, stock, age_restricted FROM products ORDER BY id ASC');
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
     echo json_encode($rows);
     exit;

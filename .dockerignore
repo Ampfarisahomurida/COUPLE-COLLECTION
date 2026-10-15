@@ -5,3 +5,8 @@ node_modules
 .gitignore
 README.md
 tests
+.env
+.env.*
+!.env.example
+backend/php/uploads/**
+backend/php/logs/**
