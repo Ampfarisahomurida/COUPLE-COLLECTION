@@ -32,6 +32,12 @@ php -S 127.0.0.1:8000 router.php
 
 Open `http://127.0.0.1:8000`. The seed command creates the tables and the configured owner account. If MySQL reports access denied, correct the credentials in `.env` for the MySQL instance you started; do not put database credentials in PHP source files.
 
+## Deploy to Render
+
+The included `render.yaml` deploys the PHP app, but it does not provision MySQL. Create a reachable MySQL database first, then deploy the Blueprint from the `main` branch. In the service environment settings, provide `DB_HOST`, `DB_NAME`, `DB_USER`, and `DB_PASS` for that database, plus a unique `ADMIN_EMAIL` and an `ADMIN_PASSWORD` of at least 12 characters. The database must already exist, and its user must be allowed to create and update tables. Keep production credentials in Render's environment settings, never in the repository or Docker image.
+
+After the service is deployed and its database settings are present, run `php backend/php/seed.php` once from the service shell to create the tables, sample catalog, and configured owner account. Set `STRIPE_SECRET`, `STRIPE_PUB`, and `STRIPE_WEBHOOK_SECRET` to live Stripe values before enabling card payments; without them, card checkout stays disabled. Render provides HTTPS for the deployed service. Configure real shipping, returns, support, privacy, terms, and any legally required age-assurance details before accepting customers.
+
 ## Payments and launch configuration
 
 Card checkout uses Stripe PaymentIntents. Set `STRIPE_SECRET`, `STRIPE_PUB`, and `STRIPE_WEBHOOK_SECRET` to the keys for the correct environment; do not commit live keys. The server calculates product prices and the configured flat `DELIVERY_FEE` (R99.99 by default), verifies successful Stripe payments, checks stock, and saves orders and order items in the database. EFT orders reserve stock, remain awaiting payment, and are not marked paid; the store must confirm payment before dispatch. Mobile wallet checkout is not offered because no wallet provider is integrated.
