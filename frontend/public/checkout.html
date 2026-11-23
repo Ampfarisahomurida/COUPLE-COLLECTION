@@ -5,18 +5,34 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Checkout — Couple Collection</title>
   <link rel="stylesheet" href="styles.css">
+  <script>document.documentElement.classList.add('auth-pending');</script>
 </head>
 <body>
+  <div class="site-utility">
+    <span>Thoughtful finds for the moments you share</span>
+    <span>South African store <span aria-hidden="true">·</span> Prices in ZAR</span>
+  </div>
   <header class="site-header">
     <div class="brand">
-      <a href="index.html"><span class="logo-mark">CC</span><span class="brand-name">Couple Collection</span></a>
+      <a href="index.html" aria-label="Couple Collection home"><span class="logo-mark">CC</span><span class="brand-name">Couple Collection</span></a>
     </div>
+    <form class="search-bar" action="shop.html">
+      <label class="sr-only" for="search-input">Search products</label>
+      <input id="search-input" type="search" name="q" placeholder="Search gifts, date-night finds and more">
+      <button type="submit" aria-label="Search">⌕</button>
+    </form>
     <nav class="site-nav">
-      <a href="shop.html">Shop</a>
-      <a href="cart.html">Cart</a>
-      <a href="index.html">Home</a>
+      <a href="shop.html">Browse</a>
+      <a href="cart.html" class="nav-cart">Basket <span data-cart-count>0</span></a>
     </nav>
   </header>
+  <nav class="category-nav" aria-label="Shop categories">
+    <a href="shop.html">All finds</a>
+    <a href="shop.html?q=date">Date night</a>
+    <a href="shop.html?q=wellness">Wellness</a>
+    <a href="shop.html?q=gift">Gifts</a>
+    <a href="shop.html?q=home">Home favourites</a>
+  </nav>
 
   <main class="page-shell">
     <section class="page-heading">
@@ -39,9 +55,8 @@
       <label>Delivery notes <textarea name="delivery_notes" rows="3" placeholder="Apartment, gate code, or delivery instructions"></textarea></label>
       <label>Payment method
         <select name="method" id="payment-method">
-          <option value="eft">Instant EFT</option>
-          <option value="wallet">Mobile Wallet</option>
           <option value="card">Credit/Debit Card</option>
+          <option value="eft">EFT (manual payment confirmation)</option>
         </select>
       </label>
       <div id="card-section" class="card-section" style="display:none;">
@@ -49,21 +64,47 @@
         <div id="card-element" class="card-element"></div>
         <div id="card-errors" class="message" role="alert"></div>
       </div>
-      <button class="button primary">Place Order</button>
+      <button class="button primary" type="submit">Place Order</button>
     </form>
     <div id="msg" class="message"></div>
   </main>
+  <script src="auth.js"></script>
   <script src="https://js.stripe.com/v3/"></script>
   <script>
     const API_BASE = '/backend/php/api';
-    const DELIVERY_FEE = 99.99;
+    let DELIVERY_FEE = 99.99;
+    let storeConfig = null;
 
     function formatPrice(value){
       return `R${Number(value || 0).toFixed(2)}`;
     }
 
+    function escapeHtml(value){
+      const element = document.createElement('span');
+      element.textContent = String(value || '');
+      return element.innerHTML;
+    }
+
+    function updateCheckoutCartCount(cart){
+      const count = cart.reduce((total, item) => total + Math.max(0, Number(item.qty) || 0), 0);
+      document.querySelectorAll('[data-cart-count]').forEach(element => {
+        element.textContent = String(count);
+        element.setAttribute('aria-label', `${count} items in basket`);
+      });
+    }
+
     function renderSummary(cart){
       const container = document.getElementById('cart-summary');
+      const submitButton = document.querySelector('#checkout button[type="submit"]');
+      const unavailable = cart.some(item => item.unavailable);
+      if(submitButton) submitButton.disabled = unavailable || !storeConfig;
+      if(unavailable){
+        document.getElementById('msg').textContent = 'Some cart items are no longer available. Return to the shop and refresh your cart.';
+      }else if(!storeConfig){
+        document.getElementById('msg').textContent = 'Checkout settings could not be loaded. Please try again later.';
+      }else{
+        document.getElementById('msg').textContent = '';
+      }
       if(!cart.length){
         container.innerHTML = '<p>Your cart is empty. Add products from the shop first.</p>';
         document.getElementById('checkout-total').textContent = '';
@@ -71,9 +112,12 @@
       }
       let total = 0;
       container.innerHTML = cart.map(item => {
+        if(item.unavailable){
+          return `<div class="cart-row"><div>${escapeHtml(item.name)}</div><div class="message">Unavailable — remove this item from your cart.</div></div>`;
+        }
         const itemTotal = (item.price||0) * (item.qty||1);
         total += itemTotal;
-        return `<div class="cart-row"><div>${item.name}</div><div>${item.qty} x ${formatPrice(item.price||0)}</div><div>${formatPrice(itemTotal)}</div></div>`;
+        return `<div class="cart-row"><div>${escapeHtml(item.name)}</div><div>${item.qty} x ${formatPrice(item.price||0)}</div><div>${formatPrice(itemTotal)}</div></div>`;
       }).join('') + `
         <div class="order-totals">
           <div><span>Products subtotal</span><strong>${formatPrice(total)}</strong></div>
@@ -82,14 +126,24 @@
       document.getElementById('checkout-total').textContent = `Total including delivery: ${formatPrice(total + DELIVERY_FEE)}`;
     }
 
-    async function initStripe(){
+    async function loadStoreConfig(){
       try{
-        const cfg = await fetch(`${API_BASE}/payment/stripe_config.php`).then(r=>r.json());
-        if(!cfg.cardEnabled || !cfg.publishableKey || cfg.publishableKey === 'pk_test_replace_me') return null;
-        return Stripe(cfg.publishableKey);
+        const response = await fetch(`${API_BASE}/payment/stripe_config.php`);
+        const cfg = await response.json();
+        const deliveryFee = Number(cfg.deliveryFee);
+        if(!response.ok || !Number.isFinite(deliveryFee) || deliveryFee < 0) throw new Error('Invalid store settings');
+        DELIVERY_FEE = deliveryFee;
+        storeConfig = cfg;
+        return cfg;
       }catch(e){
         return null;
       }
+    }
+
+    async function initStripe(){
+      const cfg = storeConfig || await loadStoreConfig();
+      if(!cfg || !cfg.cardEnabled || !cfg.publishableKey || cfg.publishableKey === 'pk_test_replace_me') return null;
+      return Stripe(cfg.publishableKey);
     }
 
     async function loadCart(){
@@ -98,18 +152,50 @@
         const res = await fetch(`${API_BASE}/cart.php`);
         if(res.ok){ cart = await res.json(); }
       }catch(e){ }
-      if(!Array.isArray(cart) || !cart.length){ cart = JSON.parse(localStorage.getItem('cart')||'[]'); }
+      if(!Array.isArray(cart) || !cart.length){
+        try{
+          cart = JSON.parse(localStorage.getItem('cart') || '[]');
+        }catch(e){
+          cart = [];
+        }
+      }
+      cart = (Array.isArray(cart) ? cart : []).map(item => ({
+        id: item.product_id || item.id,
+        name: item.name,
+        price: Number(item.price || 0),
+        qty: Number(item.qty || 1)
+      })).filter(item => item.id && item.name && item.qty > 0);
+      let catalog = [];
+      try{
+        const response = await fetch(`${API_BASE}/products.php`);
+        if(!response.ok) throw new Error('Product catalog request failed');
+        catalog = await response.json();
+        if(!Array.isArray(catalog)) throw new Error('Product catalog response was invalid');
+      }catch(error){
+        cart = cart.map(item => ({...item, unavailable: true}));
+      }
+      cart = cart.map(item => {
+        const product = catalog.find(entry => String(entry.id) === String(item.id));
+        return product
+          ? {...item, id: product.id, name: product.name, price: Number(product.price), unavailable: false}
+          : {...item, unavailable: true};
+      });
+      localStorage.setItem('cart', JSON.stringify(cart));
+      updateCheckoutCartCount(cart);
       renderSummary(cart);
       return cart;
     }
 
     document.addEventListener('DOMContentLoaded', async ()=>{
+      if(window.customerAuthReady && !await window.customerAuthReady) return;
+      await loadStoreConfig();
       const cart = await loadCart();
       const paymentMethod = document.getElementById('payment-method');
       const cardSection = document.getElementById('card-section');
       const cardErrors = document.getElementById('card-errors');
       let stripe = null;
       let cardElement = null;
+      let confirmedPaymentIntentId = null;
 
       async function mountCard(){
         if(cardElement) return;
@@ -117,7 +203,7 @@
         if(!stripe){
           cardSection.style.display = 'none';
           paymentMethod.value = 'eft';
-          document.getElementById('msg').textContent = 'Card payments are not configured yet. Please use Instant EFT or Mobile Wallet.';
+          document.getElementById('msg').textContent = 'Card payments are not configured yet. EFT orders remain pending until the store confirms payment.';
           return;
         }
         const elements = stripe.elements();
@@ -142,42 +228,82 @@
         e.preventDefault();
         const fd = new FormData(e.target);
         if(!cart.length){ document.getElementById('msg').textContent = 'Your cart is empty.'; return; }
+        const submitButton = e.target.querySelector('button[type="submit"]');
+        submitButton.disabled = true;
+        submitButton.textContent = 'Processing…';
+        document.getElementById('msg').textContent = '';
         const shippingAddress = [
           fd.get('address'),
           fd.get('city'),
           fd.get('postal_code'),
           fd.get('delivery_notes') ? `Notes: ${fd.get('delivery_notes')}` : ''
         ].filter(Boolean).join(', ');
-        const productTotal = cart.reduce((s,i)=>s + (Number(i.price)||0)*(Number(i.qty)||1),0);
-        const orderTotal = productTotal + DELIVERY_FEE;
-        const totalCents = Math.round(orderTotal * 100);
-        const method = fd.get('method');
+        const method = confirmedPaymentIntentId ? 'card' : fd.get('method');
 
         if(method === 'card'){
-          if(!cardElement){ document.getElementById('msg').textContent = 'Card input is not ready.'; return; }
-          cardErrors.textContent = '';
-          let pi = null;
-          try{
-            const intentRes = await fetch(`${API_BASE}/payment/create_intent.php`, {
-              method: 'POST',
-              headers: {'Content-Type':'application/json'},
-              body: JSON.stringify({amount: totalCents, currency:'zar', description:'Order from Couple Collection'})
-            });
-            pi = await intentRes.json();
-          }catch(error){
-            document.getElementById('msg').textContent = 'Payment service is not available right now. Please use Instant EFT or Mobile Wallet.';
+          if(!confirmedPaymentIntentId && !cardElement){
+            document.getElementById('msg').textContent = 'Card input is not ready.';
+            submitButton.disabled = false;
+            submitButton.textContent = 'Place Order';
             return;
           }
-          if(!pi.client_secret){ document.getElementById('msg').textContent = pi.error || 'Payment initiation failed.'; return; }
-          const result = await stripe.confirmCardPayment(pi.client_secret, {
-            payment_method: {
-              card: cardElement,
-              billing_details: {name: fd.get('name'), email: fd.get('email')}
+          cardErrors.textContent = '';
+          if(!confirmedPaymentIntentId){
+            let pi = null;
+            try{
+              const intentRes = await fetch(`${API_BASE}/payment/create_intent.php`, {
+                method: 'POST',
+                headers: {'Content-Type':'application/json'},
+                body: JSON.stringify({cart: cart.map(item => ({id:item.id, qty:item.qty}))})
+              });
+              pi = await intentRes.json();
+              if(!intentRes.ok){
+                document.getElementById('msg').textContent = pi.error || 'Payment initiation failed.';
+                submitButton.disabled = false;
+                submitButton.textContent = 'Place Order';
+                return;
+              }
+            }catch(error){
+              document.getElementById('msg').textContent = 'Payment service is not available right now. Your cart is still saved; please try EFT or try again later.';
+              submitButton.disabled = false;
+              submitButton.textContent = 'Place Order';
+              return;
             }
-          });
-          if(result.error){
-            cardErrors.textContent = result.error.message || 'Payment failed';
-            return;
+            if(!pi.client_secret){
+              document.getElementById('msg').textContent = pi.error || 'Payment initiation failed.';
+              submitButton.disabled = false;
+              submitButton.textContent = 'Place Order';
+              return;
+            }
+            let result;
+            try{
+              result = await stripe.confirmCardPayment(pi.client_secret, {
+                payment_method: {
+                  card: cardElement,
+                  billing_details: {name: fd.get('name'), email: fd.get('email')}
+                }
+              });
+            }catch(error){
+              cardErrors.textContent = 'Card confirmation could not be completed. Please retry.';
+              submitButton.disabled = false;
+              submitButton.textContent = 'Place Order';
+              return;
+            }
+            if(result.error){
+              cardErrors.textContent = result.error.message || 'Payment failed';
+              submitButton.disabled = false;
+              submitButton.textContent = 'Place Order';
+              return;
+            }
+            if(!result.paymentIntent || result.paymentIntent.status !== 'succeeded'){
+              document.getElementById('msg').textContent = 'Payment is not complete. Please try again.';
+              submitButton.disabled = false;
+              submitButton.textContent = 'Place Order';
+              return;
+            }
+            confirmedPaymentIntentId = result.paymentIntent.id;
+            paymentMethod.value = 'card';
+            paymentMethod.disabled = true;
           }
           try{
             const orderRes = await fetch(`${API_BASE}/checkout.php`, {
@@ -187,23 +313,23 @@
                 name: fd.get('name'),
                 email: fd.get('email'),
                 method: 'card',
-                payment_intent_id: result.paymentIntent.id,
-                cart: cart,
-                shipping_address: shippingAddress,
-                delivery_fee: DELIVERY_FEE,
-                order_total: orderTotal
+                payment_intent_id: confirmedPaymentIntentId,
+                cart: cart.map(item => ({id:item.id, qty:item.qty})),
+                shipping_address: shippingAddress
               })
             });
             const orderData = await orderRes.json();
             if(orderRes.ok){
               localStorage.removeItem('cart');
-              window.location.href = `order_success.html?order_id=${encodeURIComponent(orderData.order_id)}`;
+              window.location.href = `order_success.html?order_id=${encodeURIComponent(orderData.order_id)}&status=${encodeURIComponent(orderData.status)}`;
               return;
             }
-            document.getElementById('msg').textContent = orderData.error || 'Checkout failed.';
+            document.getElementById('msg').textContent = `Your payment is confirmed, but the order could not be saved: ${orderData.error || 'please try again'}. Keep payment reference ${confirmedPaymentIntentId} and contact the store before retrying.`;
           }catch(error){
-            document.getElementById('msg').textContent = 'Order saving failed after payment. Please contact support with your payment confirmation.';
+            document.getElementById('msg').textContent = `Your payment is confirmed, but the order could not be saved. Keep payment reference ${confirmedPaymentIntentId} and contact the store before retrying.`;
           }
+          submitButton.disabled = false;
+          submitButton.textContent = 'Place Order';
           return;
         }
 
@@ -211,25 +337,24 @@
           name: fd.get('name'),
           email: fd.get('email'),
           method: method,
-          cart: cart,
-          shipping_address: shippingAddress,
-          delivery_fee: DELIVERY_FEE,
-          order_total: orderTotal
+          cart: cart.map(item => ({id:item.id, qty:item.qty})),
+          shipping_address: shippingAddress
         };
         try{
           const res = await fetch(`${API_BASE}/checkout.php`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
           const j = await res.json();
           if(res.ok){
             localStorage.removeItem('cart');
-            window.location.href = `order_success.html?order_id=${encodeURIComponent(j.order_id)}`;
+            window.location.href = `order_success.html?order_id=${encodeURIComponent(j.order_id)}&status=${encodeURIComponent(j.status)}`;
           } else {
             document.getElementById('msg').textContent = j.error || 'Failed to place order.';
+            submitButton.disabled = false;
+            submitButton.textContent = 'Place Order';
           }
         }catch(error){
-          const orderId = `LOCAL-${Date.now()}`;
-          localStorage.setItem('lastOrder', JSON.stringify({...payload, order_id: orderId, created_at: new Date().toISOString()}));
-          localStorage.removeItem('cart');
-          window.location.href = `order_success.html?order_id=${encodeURIComponent(orderId)}`;
+          document.getElementById('msg').textContent = 'We could not confirm your order. Your cart is still saved; please try again in a moment.';
+          submitButton.disabled = false;
+          submitButton.textContent = 'Place Order';
         }
       });
     });

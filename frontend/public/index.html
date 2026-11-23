@@ -3,59 +3,98 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Couple Collection — Shop</title>
+  <meta name="description" content="Thoughtful gifts, date-night finds and little ways to feel closer. Discover the Couple Collection." />
+  <meta name="theme-color" content="#291c28" />
+  <title>Couple Collection — Thoughtful finds for two</title>
   <link rel="stylesheet" href="styles.css" />
+  <script>document.documentElement.classList.add('auth-pending');</script>
 </head>
 <body>
+  <div class="site-utility">
+    <span>Thoughtful finds for the moments you share</span>
+    <span>South African store <span aria-hidden="true">·</span> Prices in ZAR</span>
+  </div>
   <header class="site-header">
     <div class="brand">
-      <a href="index.html"><span class="logo-mark">CC</span><span class="brand-name">Couple Collection</span></a>
+      <a href="index.html" aria-label="Couple Collection home"><span class="logo-mark">CC</span><span class="brand-name">Couple Collection</span></a>
     </div>
     <form class="search-bar" action="shop.html">
-      <input id="search-input" type="search" name="q" placeholder="Search gifts, date night sets, wellness essentials" />
-      <button type="submit">Search</button>
+      <label class="sr-only" for="search-input">Search products</label>
+      <input id="search-input" type="search" name="q" placeholder="Search gifts, date-night finds and more" />
+      <button type="submit" aria-label="Search">⌕</button>
     </form>
     <nav class="site-nav">
-      <a href="shop.html">Shop</a>
-      <a href="cart.html">Cart</a>
-      <a href="checkout.html">Checkout</a>
+      <a href="shop.html">Browse</a>
+      <a href="cart.html" class="nav-cart">Basket <span data-cart-count>0</span></a>
     </nav>
   </header>
+  <nav class="category-nav" aria-label="Shop categories">
+    <a href="shop.html">All finds</a>
+    <a href="shop.html?q=date">Date night</a>
+    <a href="shop.html?q=wellness">Wellness</a>
+    <a href="shop.html?q=gift">Gifts</a>
+    <a href="shop.html?q=home">Home favourites</a>
+  </nav>
 
   <main>
     <section class="hero">
       <div class="hero-copy">
-        <span class="eyebrow">Curated for Couples</span>
-        <h2>Explore romantic essentials, premium gifts and discreet delivery.</h2>
-        <p>Shop with confidence from a modern marketplace experience built for connection.</p>
-        <a class="button primary" href="shop.html">Browse popular items</a>
+        <span class="eyebrow">THE COUPLE COLLECTION EDIT</span>
+        <h2>Find a little something for your next shared moment.</h2>
+        <p>Explore date-night favourites, feel-good self-care and thoughtful gifts—all in one happy place.</p>
+        <a class="button primary" href="shop.html">Explore all finds <span aria-hidden="true">→</span></a>
+        <div class="hero-points">
+          <span>Easy browsing</span><span>Prices in rand</span><span>Card or EFT at checkout</span>
+        </div>
       </div>
-      <div class="hero-panels">
-        <article class="panel">Date night kits</article>
-        <article class="panel">Self-care sets</article>
-        <article class="panel">New arrivals</article>
-        <article class="panel">Most loved</article>
+      <div class="hero-art" aria-hidden="true">
+        <span class="hero-art-orbit hero-art-orbit-one"></span>
+        <span class="hero-art-orbit hero-art-orbit-two"></span>
+        <span class="hero-art-heart">♡</span>
+        <span class="hero-art-caption">Better<br>together</span>
       </div>
     </section>
 
-    <section class="product-list">
+    <section class="category-shelf" aria-labelledby="category-title">
+      <div class="section-head">
+        <div><h3 id="category-title">Shop by mood</h3><p>A good place to start.</p></div>
+        <a class="text-link" href="shop.html">View everything <span aria-hidden="true">→</span></a>
+      </div>
+      <div class="category-tiles">
+        <a class="category-tile category-date" href="shop.html?q=date"><span aria-hidden="true">✦</span><strong>Date night</strong><small>Make an evening of it</small></a>
+        <a class="category-tile category-wellness" href="shop.html?q=wellness"><span aria-hidden="true">☼</span><strong>Wellness</strong><small>Little moments to unwind</small></a>
+        <a class="category-tile category-gifts" href="shop.html?q=gift"><span aria-hidden="true">♡</span><strong>Gifts</strong><small>Something worth celebrating</small></a>
+        <a class="category-tile category-home" href="shop.html?q=home"><span aria-hidden="true">⌂</span><strong>Home favourites</strong><small>Make your space yours</small></a>
+      </div>
+    </section>
+
+    <section class="product-list marketplace-products">
       <div class="section-head">
         <div>
-          <h3>Featured products</h3>
-          <p>Top picks for couples, refreshed daily.</p>
+          <span class="section-kicker">A FEW GOOD FINDS</span>
+          <h3>Popular in the collection</h3>
+          <p>Explore a few favourites and find something that feels just right.</p>
         </div>
+        <a class="text-link" href="shop.html">Shop all <span aria-hidden="true">→</span></a>
       </div>
-      <div id="products" class="collection-grid" data-grouped-products="true"></div>
+      <div id="products" class="grid"></div>
+    </section>
+
+    <section class="promise-strip" aria-label="Shopping information">
+      <div><span aria-hidden="true">♡</span><strong>Thoughtful finds</strong><small>Picked for moments together</small></div>
+      <div><span aria-hidden="true">R</span><strong>Clear rand pricing</strong><small>See your order total at checkout</small></div>
+      <div><span aria-hidden="true">✓</span><strong>Simple checkout</strong><small>Choose card or EFT</small></div>
     </section>
   </main>
 
   <footer class="site-footer">
     <div class="footer-inner">
       <span>&copy; Couple Collection</span>
-      <span>Fast delivery | Secure checkout | Customer support</span>
+      <span>Thoughtful finds for the moments you share</span>
     </div>
   </footer>
 
+  <script src="auth.js"></script>
   <script src="script.js"></script>
 </body>
 </html>

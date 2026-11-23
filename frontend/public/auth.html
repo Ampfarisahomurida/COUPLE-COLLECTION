@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#291c28">
+  <title>Sign in or register — Couple Collection</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="auth-page">
+  <header class="auth-header">
+    <a class="auth-brand" href="auth.html"><span class="logo-mark">CC</span><span class="brand-name">Couple Collection</span></a>
+    <a class="auth-owner-link" href="/backend/php/admin/dashboard.php">Owner portal</a>
+  </header>
+  <main class="auth-layout">
+    <section class="auth-welcome">
+      <span class="section-kicker">A LITTLE SOMETHING FOR TWO</span>
+      <h1>Good things start with a shared moment.</h1>
+      <p>Create an account to explore thoughtful gifts, build your basket and come back whenever you like.</p>
+      <div class="auth-welcome-note"><span aria-hidden="true">♡</span><span>One account keeps your basket and orders together.</span></div>
+    </section>
+    <section class="auth-card" aria-labelledby="auth-heading">
+      <div class="auth-tabs" role="tablist" aria-label="Account options">
+        <button type="button" class="active" data-auth-mode="register" role="tab" aria-selected="true">Create account</button>
+        <button type="button" data-auth-mode="login" role="tab" aria-selected="false">Sign in</button>
+      </div>
+      <h2 id="auth-heading">Create your account</h2>
+      <p id="auth-intro">Register to save your basket and shop the collection.</p>
+      <form id="customer-auth-form">
+        <label>Email address
+          <input name="email" type="email" autocomplete="email" maxlength="255" required>
+        </label>
+        <label>Password
+          <span class="auth-password-control">
+            <input name="password" type="password" autocomplete="new-password" minlength="10" maxlength="72" required>
+            <button type="button" class="auth-password-toggle" data-password-toggle="password" aria-label="Show password" aria-pressed="false">Show</button>
+          </span>
+        </label>
+        <label id="password-confirmation-field">Confirm password
+          <span class="auth-password-control">
+            <input id="password-confirmation" type="password" autocomplete="new-password" minlength="10" maxlength="72" required>
+            <button type="button" class="auth-password-toggle" data-password-toggle="password-confirmation" aria-label="Show confirmation password" aria-pressed="false">Show</button>
+          </span>
+        </label>
+        <button class="button primary auth-submit" type="submit">Create account</button>
+      </form>
+      <p id="auth-message" class="auth-message" role="alert" aria-live="polite"></p>
+      <p class="auth-privacy-note">Your account is used to manage your basket and orders.</p>
+    </section>
+  </main>
+  <script src="auth-page.js"></script>
+</body>
+</html>

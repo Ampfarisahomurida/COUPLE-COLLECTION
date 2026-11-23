@@ -5,34 +5,67 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Order Confirmation — Couple Collection</title>
   <link rel="stylesheet" href="styles.css">
+  <script>document.documentElement.classList.add('auth-pending');</script>
 </head>
 <body>
+  <div class="site-utility">
+    <span>Thoughtful finds for the moments you share</span>
+    <span>South African store <span aria-hidden="true">·</span> Prices in ZAR</span>
+  </div>
   <header class="site-header">
     <div class="brand">
-      <a href="index.html"><span class="logo-mark">CC</span><span class="brand-name">Couple Collection</span></a>
+      <a href="index.html" aria-label="Couple Collection home"><span class="logo-mark">CC</span><span class="brand-name">Couple Collection</span></a>
     </div>
     <nav class="site-nav">
-      <a href="shop.html">Shop</a>
-      <a href="cart.html">Cart</a>
-      <a href="checkout.html">Checkout</a>
+      <a href="shop.html">Browse</a>
+      <a href="cart.html" class="nav-cart">Basket <span data-cart-count>0</span></a>
     </nav>
   </header>
+  <nav class="category-nav" aria-label="Shop categories">
+    <a href="shop.html">All finds</a>
+    <a href="shop.html?q=date">Date night</a>
+    <a href="shop.html?q=wellness">Wellness</a>
+    <a href="shop.html?q=gift">Gifts</a>
+    <a href="shop.html?q=home">Home favourites</a>
+  </nav>
   <main class="page-shell">
     <section class="page-heading">
-      <h3>Order Confirmation</h3>
-      <p>Your order has been placed successfully. Thank you for shopping with us.</p>
+      <h3>Thanks for your order</h3>
+      <p id="confirmation-message">Your order has been submitted.</p>
     </section>
-    <div id="confirmation"></div>
+    <div id="confirmation" role="status"></div>
     <a class="button primary" href="shop.html">Continue Shopping</a>
   </main>
+  <script src="auth.js"></script>
+  <script src="script.js"></script>
   <script>
+    if(window.customerAuthReady){
+      window.customerAuthReady.then(authenticated => {
+        if(!authenticated) return;
+        showOrderConfirmation();
+      });
+    }else{
+      showOrderConfirmation();
+    }
+
+    function showOrderConfirmation(){
     const params = new URLSearchParams(window.location.search);
     const orderId = params.get('order_id');
+    const status = params.get('status');
     const container = document.getElementById('confirmation');
     if(orderId){
-      container.innerHTML = `<p>Thank you! Your order has been received.</p><p>Order ID: <strong>${orderId}</strong></p><p>We will process it shortly.</p>`;
+      const orderReference = document.createElement('p');
+      const label = document.createTextNode('Order reference: ');
+      const value = document.createElement('strong');
+      value.textContent = orderId;
+      orderReference.append(label, value);
+      container.appendChild(orderReference);
+      document.getElementById('confirmation-message').textContent = status === 'paid'
+        ? 'Your payment is confirmed. We will prepare your order shortly.'
+        : 'Your order is saved and awaiting payment. Payment must be confirmed by the store before dispatch.';
     } else {
-      container.innerHTML = '<p>Order confirmation not found. If you just submitted an order, please check your email or try again.</p>';
+      document.getElementById('confirmation-message').textContent = 'Order confirmation not found. If you just submitted an order, please contact the store.';
+    }
     }
   </script>
 </body>

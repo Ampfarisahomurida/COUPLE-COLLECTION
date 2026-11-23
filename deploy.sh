@@ -1,14 +1,19 @@
 #!/usr/bin/env bash
-# Simple deploy script for demo purposes
 set -e
-ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-echo "Deploying from $ROOT_DIR"
-# Run DB seed (ensure config.php has DB credentials)
-php "$ROOT_DIR/backend/php/seed.php"
-echo "Seed completed"
-# Ensure uploads directory permissions
-mkdir -p "$ROOT_DIR/backend/php/uploads"
-chmod 755 "$ROOT_DIR/backend/php/uploads"
+ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$ROOT_DIR"
 
-echo "Done. Start the PHP server for local testing:"
-echo "php -S localhost:8000 -t $ROOT_DIR/backend/php"
+if ! command -v docker >/dev/null 2>&1; then
+  echo "Docker Compose is required. Install Docker and try again." >&2
+  exit 1
+fi
+
+if [ ! -f .env ]; then
+  cp .env.example .env
+  echo "Created .env from the example. Replace the database/admin passwords, then run this script again." >&2
+  exit 1
+fi
+
+docker compose up --build -d
+docker compose exec php php backend/php/seed.php
+echo "Couple Collection is available at http://localhost:8080"

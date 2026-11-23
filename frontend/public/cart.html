@@ -5,37 +5,73 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Cart - Couple Collection</title>
   <link rel="stylesheet" href="styles.css">
+  <script>document.documentElement.classList.add('auth-pending');</script>
 </head>
 <body>
+  <div class="site-utility">
+    <span>Thoughtful finds for the moments you share</span>
+    <span>South African store <span aria-hidden="true">·</span> Prices in ZAR</span>
+  </div>
   <header class="site-header">
     <div class="brand">
-      <a href="index.html"><span class="logo-mark">CC</span><span class="brand-name">Couple Collection</span></a>
+      <a href="index.html" aria-label="Couple Collection home"><span class="logo-mark">CC</span><span class="brand-name">Couple Collection</span></a>
     </div>
+    <form class="search-bar" action="shop.html">
+      <label class="sr-only" for="search-input">Search products</label>
+      <input id="search-input" type="search" name="q" placeholder="Search gifts, date-night finds and more">
+      <button type="submit" aria-label="Search">⌕</button>
+    </form>
     <nav class="site-nav">
-      <a href="shop.html">Shop</a>
-      <a href="checkout.html">Checkout</a>
-      <a href="index.html">Home</a>
+      <a href="shop.html">Browse</a>
+      <a href="cart.html" class="nav-cart" aria-current="page">Basket <span data-cart-count>0</span></a>
     </nav>
   </header>
+  <nav class="category-nav" aria-label="Shop categories">
+    <a href="shop.html">All finds</a>
+    <a href="shop.html?q=date">Date night</a>
+    <a href="shop.html?q=wellness">Wellness</a>
+    <a href="shop.html?q=gift">Gifts</a>
+    <a href="shop.html?q=home">Home favourites</a>
+  </nav>
 
   <main class="page-shell">
     <section class="page-heading">
       <h3>Your Cart</h3>
-      <p>Review items before checkout and continue shopping with a clean cart layout.</p>
+      <p>Check your finds and quantities before heading to checkout.</p>
     </section>
     <div id="cart-items"></div>
     <div id="cart-total" class="cart-total"></div>
+    <div id="cart-message" class="message" role="status" aria-live="polite"></div>
     <div class="cart-actions">
       <a class="button" href="shop.html">Continue Shopping</a>
       <a class="button primary" href="checkout.html">Proceed to Checkout</a>
     </div>
   </main>
 
+  <script src="auth.js"></script>
   <script>
     const API_BASE = '/backend/php/api';
 
+    function updateCartBadge(items){
+      const count = items.reduce((total, item) => total + Math.max(0, Number(item.qty) || 0), 0);
+      document.querySelectorAll('[data-cart-count]').forEach(element => {
+        element.textContent = String(count);
+        element.setAttribute('aria-label', `${count} items in basket`);
+      });
+    }
+
     function formatPrice(value){
       return `R${Number(value || 0).toFixed(2)}`;
+    }
+
+    function escapeHtml(value){
+      return String(value || '').replace(/[&<>"']/g, character => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      })[character]);
     }
 
     function getLocalCart(){
@@ -64,6 +100,7 @@
       const out = document.getElementById('cart-items');
       const totalEl = document.getElementById('cart-total');
       const normalized = items.map(normalizeItem).filter(item => item.id && item.name);
+      updateCartBadge(normalized);
 
       if(!normalized.length){
         out.innerHTML = '<p>Your cart is empty.</p>';
@@ -75,14 +112,15 @@
       out.innerHTML = normalized.map(item => {
         const itemTotal = item.price * item.qty;
         total += itemTotal;
+        const unavailable = item.unavailable ? '<div class="message">No longer available</div>' : '';
         return `<div class="cart-row">
-          <div><strong>${item.name}</strong></div>
+          <div><strong>${escapeHtml(item.name)}</strong>${unavailable}</div>
           <div>${item.qty} x ${formatPrice(item.price)}</div>
           <div>${formatPrice(itemTotal)}</div>
           <div class="cart-row-actions">
-            <button class="qty-item" data-action="decrease" data-id="${item.id}">-</button>
-            <button class="qty-item" data-action="increase" data-id="${item.id}">+</button>
-            <button class="remove-item" data-id="${item.id}">Remove</button>
+            <button class="qty-item" data-action="decrease" data-id="${escapeHtml(item.id)}" aria-label="Decrease quantity">-</button>
+            <button class="qty-item" data-action="increase" data-id="${escapeHtml(item.id)}" aria-label="Increase quantity">+</button>
+            <button class="remove-item" data-id="${escapeHtml(item.id)}">Remove</button>
           </div>
         </div>`;
       }).join('');
@@ -95,39 +133,57 @@
         const item = cart.find(product => product.id == id);
         if(!item) return;
 
-        item.qty = Number(item.qty || 1) + (action === 'increase' ? 1 : -1);
-        const updated = cart.filter(product => Number(product.qty || 0) > 0);
-        saveLocalCart(updated);
-
-        try{
-          await fetch(`${API_BASE}/cart.php`, {
-            method: 'PUT',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({id, qty: Math.max(Number(item.qty || 0), 0)})
-          });
-        }catch(error){
-          console.warn('Cart sync failed', error);
+        const quantity = Number(item.qty || 1);
+        if(action === 'increase' && quantity >= 10){
+          document.getElementById('cart-message').textContent = 'A maximum of 10 of each product can be ordered.';
+          return;
         }
-
-        renderCart(updated);
+        document.getElementById('cart-message').textContent = '';
+        const nextQuantity = quantity + (action === 'increase' ? 1 : -1);
+        try{
+          const response = await fetch(`${API_BASE}/cart.php`, {
+            method: nextQuantity > 0 ? 'PUT' : 'DELETE',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({id, qty: Math.max(nextQuantity, 0)})
+          });
+          const result = await response.json();
+          if(!response.ok){
+            if(response.status === 401){
+              window.location.href = `auth.html?return=${encodeURIComponent('cart.html')}`;
+              return;
+            }
+            throw new Error(result.error || 'Your basket could not be updated.');
+          }
+          const updated = Array.isArray(result) ? result.map(normalizeItem) : cart;
+          saveLocalCart(updated);
+          renderCart(updated);
+        }catch(error){
+          document.getElementById('cart-message').textContent = error.message || 'Your basket could not be updated. Check your connection and try again.';
+        }
       }));
 
       document.querySelectorAll('.remove-item').forEach(btn => btn.addEventListener('click', async (e) => {
         const id = e.target.dataset.id;
-        const cart = getLocalCart().filter(item => item.id != id);
-        saveLocalCart(cart);
-
         try{
-          await fetch(`${API_BASE}/cart.php`, {
+          const response = await fetch(`${API_BASE}/cart.php`, {
             method: 'DELETE',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({id})
           });
+          const result = await response.json();
+          if(!response.ok){
+            if(response.status === 401){
+              window.location.href = `auth.html?return=${encodeURIComponent('cart.html')}`;
+              return;
+            }
+            throw new Error(result.error || 'This item could not be removed.');
+          }
+          const cart = Array.isArray(result) ? result.map(normalizeItem) : getLocalCart().filter(item => item.id != id);
+          saveLocalCart(cart);
+          renderCart(cart);
         }catch(error){
-          console.warn('Cart sync failed', error);
+          document.getElementById('cart-message').textContent = error.message || 'This item could not be removed. Check your connection and try again.';
         }
-
-        renderCart(cart);
       }));
     }
 
@@ -148,10 +204,30 @@
         saveLocalCart(items.map(normalizeItem));
       }
 
+      try{
+        const response = await fetch(`${API_BASE}/products.php`);
+        if(!response.ok) throw new Error('Product catalog request failed');
+        const catalog = await response.json();
+        if(!Array.isArray(catalog)) throw new Error('Product catalog response was invalid');
+        items = items.map(item => {
+          const product = catalog.find(entry => String(entry.id) === String(item.product_id || item.id));
+          return product
+            ? {...normalizeItem(item), name:product.name, price:Number(product.price), unavailable:false}
+            : {...normalizeItem(item), unavailable:true};
+        });
+      }catch(error){
+        items = items.map(item => ({...normalizeItem(item), unavailable:true}));
+      }
+
+      saveLocalCart(items.map(normalizeItem));
+      updateCartBadge(items);
       renderCart(items);
     }
 
-    document.addEventListener('DOMContentLoaded', loadCart);
+    document.addEventListener('DOMContentLoaded', async ()=>{
+      if(window.customerAuthReady && !await window.customerAuthReady) return;
+      loadCart();
+    });
   </script>
 </body>
 </html>
