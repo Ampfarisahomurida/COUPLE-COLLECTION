@@ -1,10 +1,10 @@
 services:
   - type: web
     name: couple-collection-shop
-    env: docker
+    runtime: docker
     dockerfilePath: Dockerfile
     dockerCommand: php -S 0.0.0.0:$PORT router.php
-    plan: starter
+    plan: 0.5c-512mb
     branch: main
     healthCheckPath: /backend/php/api/payment/stripe_config.php
     disk:
